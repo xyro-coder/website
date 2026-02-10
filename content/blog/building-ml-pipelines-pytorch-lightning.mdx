@@ -1,0 +1,385 @@
+---
+title: "Building Scalable ML Pipelines with PyTorch Lightning"
+description: "Best practices for building production-ready machine learning training pipelines that are maintainable, scalable, and easy to debug"
+date: "2025-10-10"
+tags: ["PyTorch", "ML Engineering", "Infrastructure"]
+author: "Sulayman Yusuf"
+readTime: "10 min"
+image: "/images/blog/pytorch-lightning.png"
+draft: false
+---
+
+After building ML training pipelines for 100+ model configurations at Algoverse AI, I've learned that the difference between research code and production code isn't just about performance—it's about maintainability, reproducibility, and scalability.
+
+PyTorch Lightning has been instrumental in achieving these goals. Here's what I've learned.
+
+## Why PyTorch Lightning?
+
+Raw PyTorch gives you maximum flexibility, but it also means you're responsible for:
+- Training loops
+- Distributed training setup
+- Gradient accumulation
+- Mixed precision training
+- Logging and checkpointing
+- Learning rate scheduling
+
+PyTorch Lightning handles all of this boilerplate while still giving you the flexibility to customize when needed.
+
+## Core Principles
+
+### 1. Separate Concerns
+
+The key insight of Lightning is separating **what** you want to do from **how** you want to do it:
+
+```python
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+
+class LitModel(pl.LightningModule):
+    def __init__(self, hidden_dim=256, lr=1e-3):
+        super().__init__()
+        self.save_hyperparameters()  # Auto-save hyperparams
+
+        self.encoder = nn.Sequential(
+            nn.Linear(784, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+        )
+        self.decoder = nn.Sequential(
+            nn.Linear(hidden_dim, 784),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        z = self.encoder(x)
+        return self.decoder(z)
+
+    def training_step(self, batch, batch_idx):
+        x, _ = batch
+        x_hat = self(x)
+        loss = nn.functional.mse_loss(x_hat, x)
+
+        # Automatic logging
+        self.log('train_loss', loss, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, _ = batch
+        x_hat = self(x)
+        loss = nn.functional.mse_loss(x_hat, x)
+        self.log('val_loss', loss, prog_bar=True)
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', patience=5
+        )
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'monitor': 'val_loss',
+            }
+        }
+```
+
+Now training is simple:
+
+```python
+from pytorch_lightning import Trainer
+
+trainer = Trainer(
+    max_epochs=100,
+    accelerator='gpu',
+    devices=4,  # Use 4 GPUs automatically!
+    precision='16-mixed',  # Mixed precision training
+    gradient_clip_val=1.0,
+)
+
+model = LitModel(hidden_dim=512, lr=1e-3)
+trainer.fit(model, train_dataloader, val_dataloader)
+```
+
+<Callout type="note">
+Notice how we didn't write any code for distributed training, mixed precision, or gradient clipping? Lightning handles it automatically based on the Trainer configuration.
+</Callout>
+
+## Best Practices from Production
+
+### 1. Use DataModules for Data Loading
+
+Encapsulate all data loading logic in a `LightningDataModule`:
+
+```python
+class MyDataModule(pl.LightningDataModule):
+    def __init__(self, data_dir='./data', batch_size=32, num_workers=4):
+        super().__init__()
+        self.data_dir = data_dir
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def prepare_data(self):
+        # Download data (called once, on rank 0 only)
+        download_dataset(self.data_dir)
+
+    def setup(self, stage=None):
+        # Load data (called on every GPU)
+        if stage == 'fit' or stage is None:
+            full_dataset = load_dataset(self.data_dir)
+            self.train_ds, self.val_ds = split_dataset(full_dataset)
+
+        if stage == 'test' or stage is None:
+            self.test_ds = load_test_dataset(self.data_dir)
+
+    def train_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.train_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+            pin_memory=True,
+        )
+
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.val_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=True,
+        )
+```
+
+<Callout type="tip">
+Use `pin_memory=True` and set `num_workers` to the number of CPU cores for maximum data loading speed. This can reduce training time by 30%!
+</Callout>
+
+### 2. Implement Proper Logging
+
+Log everything you might need to debug later:
+
+```python
+def training_step(self, batch, batch_idx):
+    x, y = batch
+    y_hat = self(x)
+    loss = self.criterion(y_hat, y)
+
+    # Loss logging
+    self.log('train/loss', loss, on_step=True, on_epoch=True)
+
+    # Metric logging
+    acc = self.accuracy(y_hat, y)
+    self.log('train/accuracy', acc, on_step=False, on_epoch=True)
+
+    # Learning rate logging (useful for debugging)
+    self.log('train/lr', self.optimizers().param_groups[0]['lr'])
+
+    # Gradient norm logging (catch exploding gradients)
+    if batch_idx % 100 == 0:
+        grad_norm = torch.nn.utils.clip_grad_norm_(
+            self.parameters(), float('inf')
+        )
+        self.log('train/grad_norm', grad_norm)
+
+    return loss
+```
+
+### 3. Use Callbacks for Everything Else
+
+Lightning's callback system is incredibly powerful:
+
+```python
+from pytorch_lightning.callbacks import (
+    ModelCheckpoint,
+    EarlyStopping,
+    LearningRateMonitor
+)
+
+checkpoint_callback = ModelCheckpoint(
+    dirpath='checkpoints/',
+    filename='{epoch}-{val_loss:.2f}',
+    save_top_k=3,  # Keep best 3 models
+    monitor='val_loss',
+    mode='min',
+)
+
+early_stop_callback = EarlyStopping(
+    monitor='val_loss',
+    patience=10,
+    mode='min',
+    verbose=True,
+)
+
+lr_monitor = LearningRateMonitor(logging_interval='step')
+
+trainer = Trainer(
+    callbacks=[checkpoint_callback, early_stop_callback, lr_monitor],
+    # ... other args
+)
+```
+
+### 4. Custom Callbacks for Experiment Tracking
+
+You can write custom callbacks for anything:
+
+```python
+class ExperimentTracker(pl.Callback):
+    def __init__(self, experiment_name):
+        self.experiment_name = experiment_name
+
+    def on_train_start(self, trainer, pl_module):
+        # Log hyperparameters
+        hparams = pl_module.hparams
+        print(f"Starting experiment: {self.experiment_name}")
+        print(f"Hyperparameters: {hparams}")
+
+    def on_epoch_end(self, trainer, pl_module):
+        # Save model checkpoint to S3/GCS
+        if trainer.global_rank == 0:  # Only on rank 0 in distributed setting
+            save_to_cloud(
+                pl_module.state_dict(),
+                f"{self.experiment_name}_epoch_{trainer.current_epoch}.pt"
+            )
+```
+
+## Distributed Training Made Easy
+
+One of the biggest wins: distributed training with zero code changes.
+
+```python
+# Single GPU
+trainer = Trainer(accelerator='gpu', devices=1)
+
+# Multi-GPU (DDP)
+trainer = Trainer(accelerator='gpu', devices=4, strategy='ddp')
+
+# Multi-node
+trainer = Trainer(
+    accelerator='gpu',
+    devices=8,
+    num_nodes=4,  # 4 nodes × 8 GPUs = 32 GPUs!
+    strategy='ddp',
+)
+```
+
+<Callout type="warning">
+Make sure your data loading is efficient! With distributed training, data loading can become the bottleneck. Use `num_workers` and `prefetch_factor` appropriately.
+</Callout>
+
+## Fault Tolerance
+
+In production, things fail. Lightning makes fault tolerance easy:
+
+```python
+trainer = Trainer(
+    max_epochs=100,
+    resume_from_checkpoint='last',  # Resume from last checkpoint
+    enable_checkpointing=True,
+    default_root_dir='./lightning_logs',
+)
+
+# If training crashes, just run again with the same config!
+# Lightning will automatically resume from the last checkpoint
+```
+
+## Performance Optimization Tips
+
+From our experience training 10K+ models:
+
+### 1. Mixed Precision Training
+```python
+trainer = Trainer(precision='16-mixed')  # ~2x speedup, same accuracy
+```
+
+### 2. Gradient Accumulation
+```python
+# Simulate larger batch size without OOM
+trainer = Trainer(accumulate_grad_batches=4)  # Accumulate 4 batches
+```
+
+### 3. Efficient Data Loading
+```python
+datamodule = MyDataModule(
+    batch_size=256,
+    num_workers=4,  # CPU cores for data loading
+)
+
+# In your DataLoader:
+DataLoader(
+    dataset,
+    batch_size=self.batch_size,
+    num_workers=self.num_workers,
+    pin_memory=True,  # Faster GPU transfer
+    persistent_workers=True,  # Keep workers alive between epochs
+    prefetch_factor=2,  # Prefetch 2 batches per worker
+)
+```
+
+### 4. Compile Your Model (PyTorch 2.0+)
+```python
+class LitModel(pl.LightningModule):
+    def configure_model(self):
+        if self.hparams.compile:
+            self.model = torch.compile(self.model)
+```
+
+## Real-World Example: Multi-Task Learning
+
+Here's a more complex example from a production system:
+
+```python
+class MultiTaskModel(pl.LightningModule):
+    def __init__(self, task_weights={'task1': 1.0, 'task2': 0.5}):
+        super().__init__()
+        self.save_hyperparameters()
+
+        self.backbone = ResNet50(pretrained=True)
+        self.task1_head = nn.Linear(2048, 10)
+        self.task2_head = nn.Linear(2048, 5)
+
+    def forward(self, x):
+        features = self.backbone(x)
+        return {
+            'task1': self.task1_head(features),
+            'task2': self.task2_head(features),
+        }
+
+    def training_step(self, batch, batch_idx):
+        x, labels = batch
+        outputs = self(x)
+
+        # Compute losses
+        loss1 = F.cross_entropy(outputs['task1'], labels['task1'])
+        loss2 = F.cross_entropy(outputs['task2'], labels['task2'])
+
+        # Weighted combination
+        total_loss = (
+            self.hparams.task_weights['task1'] * loss1 +
+            self.hparams.task_weights['task2'] * loss2
+        )
+
+        # Log everything
+        self.log_dict({
+            'train/loss': total_loss,
+            'train/loss_task1': loss1,
+            'train/loss_task2': loss2,
+        })
+
+        return total_loss
+```
+
+## Takeaways
+
+After building production ML pipelines:
+
+1. **Structure is key**: Separate concerns using LightningModule and DataModule
+2. **Log everything**: You never know what you'll need to debug
+3. **Use callbacks**: They keep your model code clean
+4. **Test early**: Validate your pipeline on small data first
+5. **Embrace distributed training**: It's free performance
+
+PyTorch Lightning transformed our ML infrastructure from brittle scripts to a robust, scalable system. The 30% reduction in experiment runtime came from proper data loading, mixed precision, and distributed training—all made trivial by Lightning.
+
+---
+
+*Want to discuss ML infrastructure or PyTorch Lightning? [Let's connect](/contact)!*

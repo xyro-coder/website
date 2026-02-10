@@ -1,0 +1,230 @@
+---
+title: "Equivariance in Neural Networks: Building Symmetry-Aware Models"
+description: "Learn how to build neural networks that respect geometric symmetries for better generalization and sample efficiency"
+date: "2025-11-20"
+tags: ["Geometric Deep Learning", "Equivariance", "Neural Networks"]
+author: "Sulayman Yusuf"
+readTime: "15 min"
+image: "/images/blog/equivariance.png"
+draft: false
+---
+
+One of the most powerful ideas in modern deep learning is **equivariance**—building models that respect the symmetries in your data. Let's explore what this means and why it matters.
+
+## What is Equivariance?
+
+A function $f$ is **equivariant** to a transformation $T$ if:
+
+$$f(T(x)) = T(f(x))$$
+
+In plain English: if you transform the input, the output transforms in the same way.
+
+### A Simple Example: Translation
+
+Consider an image classification network. If you shift an image 10 pixels to the right, a **translation-equivariant** feature map will also shift 10 pixels to the right.
+
+Convolutional layers are naturally translation-equivariant! This is why CNNs work so well for images.
+
+<Callout type="note">
+Equivariance is different from invariance. Invariance means the output doesn't change at all: $f(T(x)) = f(x)$. Both are useful depending on your task.
+</Callout>
+
+## Why Equivariance Matters
+
+Building equivariant networks gives you three key benefits:
+
+1. **Better Generalization**: The model learns the same concept regardless of how the input is transformed
+2. **Sample Efficiency**: You need less data because symmetries are built into the architecture
+3. **Structured Representations**: The learned features have meaningful geometric structure
+
+## Group Theory 101
+
+To understand equivariance deeply, we need a bit of group theory. A **group** $G$ is a set with an operation (like rotation or translation) that satisfies:
+- **Closure**: Combining two group elements gives another group element
+- **Associativity**: $(g_1 \cdot g_2) \cdot g_3 = g_1 \cdot (g_2 \cdot g_3)$
+- **Identity**: There exists an element $e$ where $e \cdot g = g$
+- **Inverse**: Each element $g$ has an inverse $g^{-1}$
+
+Common groups in deep learning:
+- **Translation group**: Shifting in space
+- **Rotation group SO(2)**: 2D rotations
+- **Rotation group SO(3)**: 3D rotations
+- **Permutation group**: Reordering elements
+
+## Building Equivariant Networks
+
+The key to building equivariant networks is using **group convolutions**. Instead of regular convolutions, we convolve with transformed versions of the kernel.
+
+### Example: SO(2) Equivariant Convolution
+
+For 2D rotation equivariance:
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class RotationEquivariantConv(nn.Module):
+    def __init__(self, in_channels, out_channels, num_rotations=8):
+        super().__init__()
+        self.num_rotations = num_rotations
+        self.base_conv = nn.Conv2d(in_channels, out_channels,
+                                    kernel_size=3, padding=1, bias=False)
+
+    def forward(self, x):
+        # Generate rotated versions of the kernel
+        angles = torch.linspace(0, 2*torch.pi, self.num_rotations,
+                               device=x.device)
+
+        outputs = []
+        for angle in angles:
+            # Rotate input
+            x_rot = self.rotate_image(x, angle)
+            # Apply convolution
+            out = self.base_conv(x_rot)
+            # Rotate back
+            out_rotated_back = self.rotate_image(out, -angle)
+            outputs.append(out_rotated_back)
+
+        # Max pool over rotations (or use other aggregation)
+        return torch.max(torch.stack(outputs, dim=0), dim=0)[0]
+
+    def rotate_image(self, x, angle):
+        # Simple rotation using affine transform
+        theta = torch.tensor([
+            [torch.cos(angle), -torch.sin(angle), 0],
+            [torch.sin(angle), torch.cos(angle), 0]
+        ], device=x.device).float()
+        grid = F.affine_grid(theta.unsqueeze(0).expand(x.size(0), -1, -1),
+                            x.size(), align_corners=False)
+        return F.grid_sample(x, grid, align_corners=False)
+```
+
+<Callout type="warning">
+This is a simplified implementation for demonstration. Production code should use more efficient group convolution libraries like `escnn` or `e3nn`.
+</Callout>
+
+## Steerable CNNs
+
+A more efficient approach is **steerable CNNs**, which represent features in a way that makes transformations easy:
+
+1. Features are organized by their transformation properties
+2. Kernels are parameterized as linear combinations of **basis functions**
+3. Transformations become simple matrix multiplications
+
+This is the approach used by state-of-the-art equivariant networks.
+
+## Application: Molecular Property Prediction
+
+Equivariant networks shine in scientific applications. Consider predicting molecular properties:
+
+Molecules are naturally 3D objects with SO(3) symmetry (rotation invariance). An equivariant graph neural network:
+
+```python
+class EquivariantMoleculeGNN(nn.Module):
+    def __init__(self, hidden_dim):
+        super().__init__()
+        self.edge_model = nn.Sequential(
+            nn.Linear(hidden_dim * 2 + 1, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim)
+        )
+        self.node_model = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim)
+        )
+
+    def forward(self, node_features, edge_index, pos):
+        # pos: 3D coordinates (N, 3)
+        # edge_index: connectivity (2, E)
+
+        row, col = edge_index
+
+        # Compute edge vectors (equivariant!)
+        edge_vec = pos[row] - pos[col]  # (E, 3)
+        edge_len = torch.norm(edge_vec, dim=-1, keepdim=True)  # (E, 1)
+
+        # Edge updates (using invariant features only)
+        edge_feat = torch.cat([
+            node_features[row],
+            node_features[col],
+            edge_len
+        ], dim=-1)
+        edge_updates = self.edge_model(edge_feat)
+
+        # Aggregate to nodes
+        node_updates = torch.zeros_like(node_features)
+        node_updates.index_add_(0, row, edge_updates)
+
+        # Node updates
+        node_features = node_features + self.node_model(node_updates)
+
+        return node_features
+```
+
+## Practical Tips
+
+When building equivariant networks:
+
+1. **Identify Symmetries**: What transformations should your model respect?
+2. **Choose the Right Group**: Not all symmetries are relevant for all tasks
+3. **Use Existing Libraries**: `escnn`, `e3nn`, `jraph` have battle-tested implementations
+4. **Test Equivariance**: Always verify your network is actually equivariant
+
+Testing equivariance:
+
+```python
+def test_equivariance(model, x, transformation):
+    """Test if model(T(x)) == T(model(x))"""
+    y1 = model(transformation(x))
+    y2 = transformation(model(x))
+
+    error = torch.abs(y1 - y2).mean()
+    print(f"Equivariance error: {error:.6f}")
+    assert error < 1e-5, "Model is not equivariant!"
+```
+
+## The Bigger Picture: Geometric Deep Learning
+
+Equivariant networks are part of a larger framework called **Geometric Deep Learning**, which provides a unified perspective on neural network design based on symmetry and geometry.
+
+Key principles:
+- **Symmetry**: Networks should respect the symmetries of the data
+- **Scale Separation**: Different scales need different processing
+- **Locality**: Operations should be local in the relevant space (spatial, graph, etc.)
+
+<Callout type="tip">
+Michael Bronstein's "Geometric Deep Learning" book provides an excellent introduction to these ideas. Highly recommended!
+</Callout>
+
+## Case Study: My Equivariant VAE Project
+
+In my [Equivariant VAE project](/projects/equivariant-vae), I applied these principles to video generation:
+
+- **SO(3) equivariance** for handling camera rotations
+- **Translation equivariance** for spatial shifts
+- **7× speedup** compared to non-equivariant baseline
+
+The key insight: by building symmetries into the architecture, the model learned more robust representations with less data.
+
+## Further Exploration
+
+If you want to dive deeper:
+
+1. **Papers**:
+   - Cohen & Welling (2016): "Group Equivariant Convolutional Networks"
+   - Thomas et al. (2018): "Tensor Field Networks"
+   - Bronstein et al. (2021): "Geometric Deep Learning"
+
+2. **Libraries**:
+   - `escnn`: E(n)-equivariant CNNs
+   - `e3nn`: E(3)-equivariant neural networks
+   - `TorchDrug`: Equivariant networks for molecules
+
+3. **Courses**:
+   - African Master's in Machine Intelligence (AMMI) Geometric Deep Learning course
+
+---
+
+*Interested in building equivariant models? Let's discuss! [Get in touch](/contact).*

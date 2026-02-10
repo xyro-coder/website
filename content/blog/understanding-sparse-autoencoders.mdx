@@ -1,0 +1,131 @@
+---
+title: "Understanding Sparse Autoencoders: A Geometric Perspective"
+description: "An in-depth exploration of sparse autoencoders and how geometric constraints lead to more interpretable representations"
+date: "2025-12-15"
+tags: ["Machine Learning", "Sparse Autoencoders", "Interpretability"]
+author: "Sulayman Yusuf"
+readTime: "12 min"
+image: "/images/blog/sparse-autoencoders.png"
+draft: false
+---
+
+Sparse autoencoders (SAEs) have emerged as a powerful tool for learning interpretable representations in high-dimensional data. But what makes them work, and how can we understand them through a geometric lens?
+
+## What Are Sparse Autoencoders?
+
+At their core, sparse autoencoders are neural networks that learn to compress data into a lower-dimensional representation (the latent space) and then reconstruct the original data. The key difference from standard autoencoders is the **sparsity constraint**: we want only a small number of latent features to be active for any given input.
+
+Mathematically, a sparse autoencoder consists of:
+- An encoder function $f: \mathbb{R}^n \rightarrow \mathbb{R}^k$
+- A decoder function $g: \mathbb{R}^k \rightarrow \mathbb{R}^n$
+- A sparsity-inducing mechanism (e.g., Top-k selection, L1 regularization)
+
+## The Geometry of Sparsity
+
+Here's where things get interesting. When we enforce sparsity, we're essentially partitioning the latent space into regions where different features are active. This creates a **geometric structure** that reflects the underlying patterns in the data.
+
+<Callout type="note">
+Think of each latent dimension as a direction in a high-dimensional space. Sparsity means that for each input, we're only moving along a few of these directions.
+</Callout>
+
+### Why Geometry Matters
+
+The geometric perspective reveals why sparse autoencoders lead to interpretable features:
+
+1. **Orthogonality**: Sparse features tend to be more orthogonal (independent), making them easier to interpret
+2. **Manifold Structure**: The active features at any point reveal the local manifold structure of the data
+3. **Feature Directions**: Each latent dimension corresponds to a meaningful direction in input space
+
+## Top-k Sparse Autoencoders
+
+One popular approach to enforcing sparsity is the **Top-k** method: keep only the k largest activations in the latent space and zero out the rest.
+
+```python
+def topk_sparse_encoder(x, k=10):
+    # Encode to latent space
+    z = encoder(x)  # shape: [batch_size, latent_dim]
+
+    # Keep only top-k activations
+    values, indices = torch.topk(z, k, dim=-1)
+    z_sparse = torch.zeros_like(z)
+    z_sparse.scatter_(-1, indices, values)
+
+    return z_sparse
+```
+
+## The Challenge: Preserving Principal Components
+
+A key challenge with sparse autoencoders is preserving the **principal components** of the data distribution. When we enforce hard sparsity constraints, we risk losing important geometric structure.
+
+This is where techniques like the **rotation trick** come in. By applying rotation-equivariant transformations, we can maintain geometric structure while still benefiting from sparsity.
+
+<Callout type="tip">
+The rotation trick helps preserve the principal directions of variation in your data, leading to better reconstruction quality and more meaningful features.
+</Callout>
+
+## Applications in Mechanistic Interpretability
+
+Sparse autoencoders are particularly useful for **mechanistic interpretability**—understanding what neural networks learn internally. By training an SAE on the activations of a large language model, for example, we can discover interpretable features like:
+
+- Syntax patterns (e.g., "verb phrases")
+- Semantic concepts (e.g., "emotions")
+- Reasoning patterns (e.g., "logical inference")
+
+## Implementation Tips
+
+When implementing sparse autoencoders, consider:
+
+1. **Initialization**: Good weight initialization is crucial. Use He or Xavier initialization.
+2. **Sparsity Level**: Start with k = latent_dim / 10 and adjust based on reconstruction quality.
+3. **Training Schedule**: Gradually increase sparsity during training for better stability.
+4. **Gradient Flow**: Ensure gradients flow through the sparsity operation (use straight-through estimators if needed).
+
+```python
+class SparseAutoencoder(nn.Module):
+    def __init__(self, input_dim, latent_dim, k):
+        super().__init__()
+        self.encoder = nn.Linear(input_dim, latent_dim)
+        self.decoder = nn.Linear(latent_dim, input_dim)
+        self.k = k
+
+    def forward(self, x):
+        # Encode
+        z = self.encoder(x)
+
+        # Apply Top-k sparsity
+        z_sparse = self.topk_sparse(z)
+
+        # Decode
+        x_recon = self.decoder(z_sparse)
+
+        return x_recon, z_sparse
+
+    def topk_sparse(self, z):
+        values, indices = torch.topk(z, self.k, dim=-1)
+        z_sparse = torch.zeros_like(z)
+        z_sparse.scatter_(-1, indices, values)
+        return z_sparse
+```
+
+## Looking Forward
+
+The future of sparse autoencoders lies in better understanding their geometric properties. By combining insights from:
+- **Geometric deep learning**: Equivariance and symmetry
+- **Manifold learning**: Structure of high-dimensional data
+- **Interpretability**: Making features more understandable
+
+We can build more powerful and interpretable models.
+
+## Further Reading
+
+- Bricken et al. (2023). "Towards Monosemanticity: Decomposing Language Models With Dictionary Learning"
+- Cunningham et al. (2023). "Sparse Autoencoders Find Highly Interpretable Features in Language Models"
+- My paper: "RT-TopKSAE: Improving Top-k Sparse Autoencoders with the Rotation Trick"
+
+<Callout type="warning">
+Remember that sparsity is a tool, not a goal. Always validate that your sparse representations preserve the information you care about!
+</Callout>
+
+---
+
+*Want to discuss sparse autoencoders or geometric deep learning? Feel free to [reach out](/contact)!*

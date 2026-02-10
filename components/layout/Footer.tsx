@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Github, Linkedin, Mail, Phone } from 'lucide-react'
+import { Github, Linkedin, Mail } from 'lucide-react'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -75,14 +75,6 @@ export default function Footer() {
                   Publications
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/blog"
-                  className="text-sm text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                >
-                  Blog
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -100,10 +92,6 @@ export default function Footer() {
                 >
                   sulaymanyusuf.a@gmail.com
                 </a>
-              </li>
-              <li className="flex items-center space-x-2 text-sm text-text-muted-light dark:text-text-muted">
-                <Phone className="h-4 w-4" />
-                <span>206-798-6222</span>
               </li>
             </ul>
           </div>

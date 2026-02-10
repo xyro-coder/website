@@ -5,14 +5,14 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 
-// Dynamically import 3D scene for better performance
-const HeroScene = dynamic(() => import('@/components/geometric/HeroScene'), {
+// Dynamically import enhanced 3D scene for better performance
+const EnhancedHeroScene = dynamic(() => import('@/components/geometric/EnhancedHeroScene'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[500px] md:h-[600px] flex items-center justify-center bg-gradient-mesh">
+    <div className="w-full h-[800px] md:h-[900px] lg:h-[1000px] flex items-center justify-center bg-gradient-mesh">
       <div className="text-center">
-        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-cyan-accent border-r-transparent"></div>
-        <p className="mt-4 text-text-muted">Loading visualization...</p>
+        <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-solid border-cyan-accent border-r-transparent"></div>
+        <p className="mt-6 text-text-muted text-lg">Loading geometric visualization...</p>
       </div>
     </div>
   ),
@@ -109,9 +109,9 @@ export default function Home() {
 
             {/* 3D Visualization */}
             <div className="relative">
-              <HeroScene />
+              <EnhancedHeroScene />
               <p className="text-center text-sm text-text-muted mt-4">
-                Interactive 3D visualization demonstrating SO(3) equivariance
+                Interactive geometric deep learning visualization
               </p>
             </div>
           </div>
@@ -214,16 +214,16 @@ export default function Home() {
               </Card>
             </Link>
 
-            <Link href="/blog">
+            <Link href="/publications">
               <Card hover className="p-8 h-full">
                 <h3 className="text-2xl font-bold mb-3 text-text-dark dark:text-text-light">
-                  Blog
+                  Publications
                 </h3>
                 <p className="text-text-muted-light dark:text-text-muted mb-4">
-                  Technical deep-dives into ML research and engineering
+                  Research papers on geometric deep learning and interpretability
                 </p>
                 <div className="flex items-center text-purple-accent-light dark:text-purple-accent group-hover:translate-x-2 transition-transform">
-                  Read Blog <ArrowRight className="ml-2 h-5 w-5" />
+                  View Research <ArrowRight className="ml-2 h-5 w-5" />
                 </div>
               </Card>
             </Link>

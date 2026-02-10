@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
-import { Project, Publication, BlogPost, ProjectFrontmatter, PublicationFrontmatter, BlogPostFrontmatter } from '@/types'
+import { Project, Publication, ProjectFrontmatter, PublicationFrontmatter } from '@/types'
 
 const contentDirectory = path.join(process.cwd(), 'content')
 
@@ -81,27 +81,3 @@ export function getPublicationBySlug(slug: string): Publication | null {
   }
 }
 
-// Blog posts
-export function getAllBlogPosts(): BlogPost[] {
-  return getContentByType<BlogPost>('blog').filter(post => !post.draft)
-}
-
-export function getBlogPostBySlug(slug: string): BlogPost | null {
-  try {
-    const fullPath = path.join(contentDirectory, 'blog', `${slug}.mdx`)
-    const fileContents = fs.readFileSync(fullPath, 'utf8')
-    const { data, content } = matter(fileContents)
-
-    return {
-      slug,
-      ...(data as BlogPostFrontmatter),
-      content,
-    }
-  } catch {
-    return null
-  }
-}
-
-export function getBlogPostsByTag(tag: string): BlogPost[] {
-  return getAllBlogPosts().filter(post => post.tags.includes(tag))
-}

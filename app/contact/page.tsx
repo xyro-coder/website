@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { Mail, Phone, Github, Linkedin, MapPin } from 'lucide-react'
+import { Mail, Github, Linkedin, MapPin } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 
@@ -25,9 +25,9 @@ export default function ContactPage() {
         </div>
 
         {/* Contact Methods */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="flex justify-center mb-12">
           {/* Email */}
-          <Card hover className="p-8 text-center">
+          <Card hover className="p-8 text-center max-w-md w-full">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-accent-light to-cyan-accent flex items-center justify-center">
               <Mail className="h-8 w-8 text-white" />
             </div>
@@ -39,22 +39,6 @@ export default function ContactPage() {
               className="text-cyan-accent-light dark:text-cyan-accent hover:underline"
             >
               sulaymanyusuf.a@gmail.com
-            </a>
-          </Card>
-
-          {/* Phone */}
-          <Card hover className="p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-accent-light to-purple-accent flex items-center justify-center">
-              <Phone className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2 text-text-dark dark:text-text-light">
-              Phone
-            </h3>
-            <a
-              href="tel:+12067986222"
-              className="text-purple-accent-light dark:text-purple-accent hover:underline"
-            >
-              206-798-6222
             </a>
           </Card>
         </div>

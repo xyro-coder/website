@@ -2,96 +2,108 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
-import ThemeToggle from './ThemeToggle'
-import { useState } from 'react'
-import { cn } from '@/lib/utils'
 
-const navItems = [
-  { name: 'About', href: '/about' },
-  { name: 'Projects', href: '/projects' },
-  { name: 'Publications', href: '/publications' },
-  { name: 'Contact', href: '/contact' },
+const NAV = [
+  { label: 'About', href: '/about' },
+  { label: 'Projects', href: '/projects' },
+  { label: 'Publications', href: '/publications' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 export default function Header() {
   const pathname = usePathname()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => { setOpen(false) }, [pathname])
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-text-muted-light/20 dark:border-text-muted/20 bg-white/80 dark:bg-navy-dark/80 backdrop-blur-md">
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <header
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      style={{
+        background: scrolled ? 'rgba(8,12,30,0.85)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
+      }}
+    >
+      <nav className="container mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="text-xl font-bold text-text-dark dark:text-text-light hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-          >
-            <span className="bg-gradient-to-r from-cyan-accent-light to-purple-accent-light dark:from-cyan-accent dark:to-purple-accent bg-clip-text text-transparent">
+          <Link href="/" className="group flex items-center gap-2">
+            <span className="text-lg font-bold bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(135deg, #06b6d4, #a855f7)' }}>
               SY
+            </span>
+            <span className="hidden sm:block text-sm text-slate-500 font-mono group-hover:text-slate-400 transition-colors">
+              / portfolio
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-                  pathname === item.href
-                    ? 'text-cyan-accent-light dark:text-cyan-accent bg-light-surface dark:bg-navy-surface'
-                    : 'text-text-muted-light dark:text-text-muted hover:text-text-dark dark:hover:text-text-light hover:bg-light-surface dark:hover:bg-navy-surface'
-                )}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-
-          {/* Theme Toggle & Mobile Menu Button */}
-          <div className="flex items-center space-x-2">
-            <ThemeToggle />
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md hover:bg-light-surface dark:hover:bg-navy-surface transition-colors"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-text-muted-light/20 dark:border-text-muted/20">
-            <div className="flex flex-col space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-                    pathname === item.href
-                      ? 'text-cyan-accent-light dark:text-cyan-accent bg-light-surface dark:bg-navy-surface'
-                      : 'text-text-muted-light dark:text-text-muted hover:text-text-dark dark:hover:text-text-light hover:bg-light-surface dark:hover:bg-navy-surface'
+          <div className="hidden md:flex items-center gap-1">
+            {NAV.map(({ label, href }) => {
+              const active = pathname === href
+              return (
+                <Link key={href} href={href}
+                  className="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg group"
+                  style={{ color: active ? '#06b6d4' : '#94a3b8' }}>
+                  <span className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'rgba(6,182,212,0.06)' }} />
+                  <span className="relative">{label}</span>
+                  {active && (
+                    <span className="absolute bottom-0 left-4 right-4 h-px"
+                      style={{ background: 'linear-gradient(90deg, #06b6d4, #a855f7)' }} />
                   )}
-                >
-                  {item.name}
                 </Link>
-              ))}
-            </div>
+              )
+            })}
+            <a href="mailto:sulaymanyusuf.a@gmail.com"
+              className="ml-4 px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200"
+              style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}>
+              Let&apos;s Talk
+            </a>
           </div>
-        )}
+
+          <button onClick={() => setOpen(v => !v)}
+            className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white transition-colors"
+            aria-label="Toggle menu">
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </nav>
+
+      <div className="md:hidden overflow-hidden transition-all duration-300"
+        style={{
+          maxHeight: open ? '300px' : '0',
+          background: 'rgba(8,12,30,0.96)',
+          backdropFilter: 'blur(20px)',
+          borderTop: open ? '1px solid rgba(255,255,255,0.05)' : 'none',
+        }}>
+        <div className="px-6 py-4 flex flex-col gap-1">
+          {NAV.map(({ label, href }) => {
+            const active = pathname === href
+            return (
+              <Link key={href} href={href}
+                className="px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                style={{ color: active ? '#06b6d4' : '#94a3b8', background: active ? 'rgba(6,182,212,0.08)' : 'transparent' }}>
+                {label}
+              </Link>
+            )
+          })}
+          <a href="mailto:sulaymanyusuf.a@gmail.com"
+            className="mt-2 px-4 py-3 rounded-lg text-sm font-medium text-cyan-400 text-center"
+            style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}>
+            Let&apos;s Talk
+          </a>
+        </div>
+      </div>
     </header>
   )
 }

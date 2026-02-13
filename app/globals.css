@@ -7,193 +7,90 @@
 :root {
   --font-inter: 'Inter', sans-serif;
   --font-ibm-plex-mono: 'IBM Plex Mono', monospace;
+  --bg: #080c1e;
+  --cyan: #06b6d4;
+  --purple: #a855f7;
 }
 
 @layer base {
-  body {
-    @apply bg-white dark:bg-navy-dark text-text-dark dark:text-text-light;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
-  }
-
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
+    color-scheme: dark;
   }
 
-  /* Custom scrollbar for webkit browsers */
-  ::-webkit-scrollbar {
-    width: 10px;
+  body {
+    background-color: #080c1e;
+    color: #e2e8f0;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
   }
 
-  ::-webkit-scrollbar-track {
-    @apply bg-light-surface dark:bg-navy-surface;
-  }
-
+  /* Minimal dark scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #080c1e; }
   ::-webkit-scrollbar-thumb {
-    @apply bg-text-muted-light dark:bg-text-muted rounded-full;
+    background: rgba(6, 182, 212, 0.3);
+    border-radius: 2px;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-cyan-accent-light dark:bg-cyan-accent;
+    background: rgba(6, 182, 212, 0.6);
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(6, 182, 212, 0.25);
+    color: #fff;
   }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  /* Geometric gradient backgrounds */
-  .gradient-mesh {
-    background:
-      radial-gradient(at 40% 20%, rgba(6, 182, 212, 0.1) 0px, transparent 50%),
-      radial-gradient(at 80% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
-      radial-gradient(at 0% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
-  }
-
-  /* Link hover effect */
-  .link-underline {
-    @apply relative;
-  }
-
-  .link-underline::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-accent dark:bg-cyan-accent transition-all duration-300;
-  }
-
-  .link-underline:hover::after {
-    @apply w-full;
-  }
-
-  /* Card hover effect */
-  .card-hover {
-    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-lg;
-  }
-
-  /* Geometric border */
-  .geometric-border {
-    @apply relative;
-  }
-
-  .geometric-border::before {
-    content: '';
-    @apply absolute inset-0 rounded-lg;
-    background: linear-gradient(45deg, #06b6d4, #a855f7);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .geometric-border:hover::before {
-    opacity: 0.1;
-  }
+/* ── Page transition ── */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* KaTeX math styling */
-.katex {
-  font-size: 1.1em;
+.page-transition {
+  animation: page-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
-.katex-display {
-  @apply my-6 overflow-x-auto overflow-y-hidden;
+/* ── Nav link active indicator ── */
+@keyframes nav-slide-in {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
-/* Code block styling */
+/* ── Glow pulse ── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(6, 182, 212, 0.3); }
+  50%       { box-shadow: 0 0 24px rgba(6, 182, 212, 0.6); }
+}
+
+/* KaTeX */
+.katex { font-size: 1.1em; }
+.katex-display { @apply my-6 overflow-x-auto overflow-y-hidden; }
+
+/* Code blocks */
 pre {
-  @apply rounded-lg p-4 overflow-x-auto my-6 bg-navy-surface dark:bg-navy-surface/50;
+  @apply rounded-xl p-4 overflow-x-auto my-6;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
 }
-
-code {
-  @apply text-sm font-mono;
-}
-
+code { @apply text-sm font-mono; }
 :not(pre) > code {
-  @apply px-1.5 py-0.5 rounded bg-light-surface dark:bg-navy-surface text-cyan-accent-light dark:text-cyan-accent;
+  @apply px-1.5 py-0.5 rounded text-cyan-400;
+  background: rgba(6,182,212,0.1);
+  border: 1px solid rgba(6,182,212,0.2);
 }
 
-/* MDX Content Styling */
-.mdx-content {
-  @apply text-text-dark dark:text-text-light;
-}
-
-.mdx-content h1 {
-  @apply text-4xl font-bold mt-12 mb-6 text-text-dark dark:text-text-light;
-}
-
-.mdx-content h2 {
-  @apply text-3xl font-bold mt-10 mb-4 text-text-dark dark:text-text-light;
-}
-
-.mdx-content h3 {
-  @apply text-2xl font-semibold mt-8 mb-3 text-text-dark dark:text-text-light;
-}
-
-.mdx-content h4 {
-  @apply text-xl font-semibold mt-6 mb-2 text-text-dark dark:text-text-light;
-}
-
-.mdx-content p {
-  @apply my-4 leading-relaxed text-text-muted-light dark:text-text-muted;
-}
-
-.mdx-content ul, .mdx-content ol {
-  @apply my-4 ml-6 space-y-2;
-}
-
-.mdx-content li {
-  @apply text-text-muted-light dark:text-text-muted;
-}
-
-.mdx-content a {
-  @apply text-cyan-accent-light dark:text-cyan-accent hover:underline;
-}
-
+/* MDX */
+.mdx-content { color: #cbd5e1; }
+.mdx-content h1 { @apply text-4xl font-bold mt-12 mb-6 text-white; }
+.mdx-content h2 { @apply text-3xl font-bold mt-10 mb-4 text-white; }
+.mdx-content h3 { @apply text-2xl font-semibold mt-8 mb-3 text-white; }
+.mdx-content p  { @apply my-4 leading-relaxed text-slate-400; }
+.mdx-content ul, .mdx-content ol { @apply my-4 ml-6 space-y-2; }
+.mdx-content li { @apply text-slate-400; }
+.mdx-content a  { @apply text-cyan-400 hover:underline; }
 .mdx-content blockquote {
-  @apply border-l-4 border-cyan-accent pl-4 my-6 italic text-text-muted-light dark:text-text-muted;
-}
-
-.mdx-content img {
-  @apply rounded-lg my-6;
-}
-
-.mdx-content table {
-  @apply w-full my-6 border-collapse;
-}
-
-.mdx-content th {
-  @apply bg-light-surface dark:bg-navy-surface p-3 text-left font-semibold;
-}
-
-.mdx-content td {
-  @apply border-t border-text-muted-light/20 dark:border-text-muted/20 p-3;
-}
-
-/* Loading animation */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-.skeleton {
-  animation: shimmer 2s infinite;
-  background: linear-gradient(
-    to right,
-    #f1f5f9 4%,
-    #e2e8f0 25%,
-    #f1f5f9 36%
-  );
-  background-size: 1000px 100%;
-}
-
-.dark .skeleton {
-  background: linear-gradient(
-    to right,
-    #1e293b 4%,
-    #334155 25%,
-    #1e293b 36%
-  );
-  background-size: 1000px 100%;
+  @apply border-l-4 border-cyan-500 pl-4 my-6 italic text-slate-500;
 }

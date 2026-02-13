@@ -2,104 +2,58 @@ import Link from 'next/link'
 import { Github, Linkedin, Mail } from 'lucide-react'
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
-
   return (
-    <footer className="border-t border-text-muted-light/20 dark:border-text-muted/20 bg-white dark:bg-navy-dark">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* About */}
+    <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(8,12,30,0.8)' }}>
+      <div className="container mx-auto max-w-7xl px-6 lg:px-8 py-12">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+
+          {/* Brand */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-text-dark dark:text-text-light">
+            <span className="text-lg font-bold bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(135deg, #06b6d4, #a855f7)' }}>
               Sulayman Yusuf
-            </h3>
-            <p className="text-sm text-text-muted-light dark:text-text-muted mb-4">
-              CS Researcher & ML Engineer specializing in geometric deep learning and mechanistic interpretability.
+            </span>
+            <p className="text-sm text-slate-600 mt-1 font-mono">
+              CS Researcher · ML Engineer · UW Allen School
             </p>
-            <div className="flex space-x-4">
-              <a
-                href="https://github.com/xyro-coder"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                aria-label="GitHub"
-              >
-                <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="https://www.linkedin.com/in/sulayman-yusuf-a84940214/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="h-5 w-5" />
-              </a>
-              <a
-                href="mailto:sulaymanyusuf.a@gmail.com"
-                className="text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                aria-label="Email"
-              >
-                <Mail className="h-5 w-5" />
-              </a>
-            </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-text-dark dark:text-text-light">
-              Quick Links
-            </h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/about"
-                  className="text-sm text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/projects"
-                  className="text-sm text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                >
-                  Projects
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/publications"
-                  className="text-sm text-text-muted-light dark:text-text-muted hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                >
-                  Publications
-                </Link>
-              </li>
-            </ul>
+          {/* Nav */}
+          <div className="flex gap-6 text-sm text-slate-500">
+            {['/about', '/projects', '/publications', '/contact'].map(href => (
+              <Link key={href} href={href}
+                className="hover:text-cyan-400 transition-colors capitalize">
+                {href.replace('/', '')}
+              </Link>
+            ))}
           </div>
 
-          {/* Contact */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-text-dark dark:text-text-light">
-              Get In Touch
-            </h3>
-            <ul className="space-y-2">
-              <li className="flex items-center space-x-2 text-sm text-text-muted-light dark:text-text-muted">
-                <Mail className="h-4 w-4" />
-                <a
-                  href="mailto:sulaymanyusuf.a@gmail.com"
-                  className="hover:text-cyan-accent-light dark:hover:text-cyan-accent transition-colors"
-                >
-                  sulaymanyusuf.a@gmail.com
-                </a>
-              </li>
-            </ul>
+          {/* Socials */}
+          <div className="flex gap-3">
+            {[
+              { href: 'https://github.com/xyro-coder', icon: Github, label: 'GitHub' },
+              { href: 'https://www.linkedin.com/in/sulayman-yusuf-a84940214/', icon: Linkedin, label: 'LinkedIn' },
+              { href: 'mailto:sulaymanyusuf.a@gmail.com', icon: Mail, label: 'Email' },
+            ].map(({ href, icon: Icon, label }) => (
+              <a key={label} href={href}
+                target={href.startsWith('mailto') ? undefined : '_blank'}
+                rel="noopener noreferrer"
+                aria-label={label}
+                className="p-2 rounded-lg text-slate-600 hover:text-cyan-400 transition-colors"
+                style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-text-muted-light/20 dark:border-text-muted/20">
-          <p className="text-center text-sm text-text-muted-light dark:text-text-muted">
-            © {currentYear} Sulayman Yusuf. Built with Next.js and geometric precision.
+        <div className="mt-8 pt-6 flex flex-col md:flex-row items-center justify-between gap-2"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <p className="text-xs text-slate-700 font-mono">
+            © {new Date().getFullYear()} Sulayman Yusuf
+          </p>
+          <p className="text-xs text-slate-700 font-mono">
+            Built with geometric precision
           </p>
         </div>
       </div>

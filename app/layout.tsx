@@ -4,6 +4,7 @@ import './globals.css'
 import 'katex/dist/katex.min.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import PageTransitionWrapper from '@/components/layout/PageTransitionWrapper'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -46,9 +47,9 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-[#080c1e] text-slate-200`}>
         <div className="min-h-screen flex flex-col">
           <Header />
-          <main className="flex-grow page-transition pt-16">
+          <PageTransitionWrapper>
             {children}
-          </main>
+          </PageTransitionWrapper>
           <Footer />
         </div>
       </body>

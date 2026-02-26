@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
-import Button from './Button'
+import SleekButton from './SleekButton'
 
 interface CopyButtonProps {
   text: string
@@ -23,22 +23,18 @@ export default function CopyButton({ text, label = 'Copy' }: CopyButtonProps) {
   }
 
   return (
-    <Button
-      variant="outline"
-      className="w-full"
-      onClick={handleCopy}
-    >
+    <SleekButton onClick={handleCopy}>
       {copied ? (
         <>
-          <Check className="mr-2 h-5 w-5" />
+          <Check className="h-3.5 w-3.5" />
           Copied!
         </>
       ) : (
         <>
-          <Copy className="mr-2 h-5 w-5" />
+          <Copy className="h-3.5 w-3.5" />
           {label}
         </>
       )}
-    </Button>
+    </SleekButton>
   )
 }

@@ -152,7 +152,7 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
       ctx.font = '9px monospace'
       ctx.textAlign = 'center'
       ctx.fillStyle = rtMode ? 'rgba(6,182,212,0.25)' : 'rgba(100,120,160,0.15)'
-      ctx.fillText('@ BibTeX · bibtex{rt-topksae}', W / 2, bibY + 14)
+      ctx.fillText('@ BibTeX · citation', W / 2, bibY + 14)
 
       // ── Update & draw particles ──
       const newLit: number[] = []

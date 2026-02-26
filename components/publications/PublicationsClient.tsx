@@ -119,7 +119,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
         <p className="text-xs uppercase tracking-[0.35em] text-slate-700 mb-5 font-mono">
-          Latent Projections · Rotation Trick · Sparsity Collapse
+          Latent Projections · Geometric Rotation · Sparsity Collapse
         </p>
         <h1 className="text-6xl md:text-8xl font-bold leading-none mb-6">
           <span className="bg-clip-text text-transparent"
@@ -133,7 +133,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
         </p>
       </motion.div>
 
-      {/* ─── RT-TopKSAE: The Rotation Trick Interactive Proof ─── */}
+      {/* ─── Featured: The Geometric Rotation Interactive Proof ─── */}
       {featuredPub && (
         <section ref={sectionRef} className="relative px-4 sm:px-6 lg:px-8 pb-32">
           <div className="container mx-auto max-w-6xl">
@@ -264,7 +264,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
                             <p className="text-xs text-slate-700 font-mono">
                               {gradientMode === 'baseline'
                                 ? 'Baseline: gradient vanishes at sparse nodes'
-                                : 'RT-TopKSAE: gradient passes through gaps'}
+                                : 'Ours: gradient passes through gaps'}
                             </p>
                           </div>
                           <div className="flex gap-2">
@@ -285,7 +285,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
                                     : 'rgb(100,116,139)',
                                 }}
                               >
-                                {m === 'baseline' ? 'Baseline' : 'RT-TopKSAE'}
+                                {m === 'baseline' ? 'Baseline' : 'Ours'}
                               </button>
                             ))}
                           </div>

@@ -1,6 +1,6 @@
 ---
-title: "RT-TopKSAE: Improving Top-k Sparse Autoencoders with the Rotation Trick"
-authors: ["Sulayman Yusuf", "A. Balwani"]
+title: "[Double-Blind] Improving Top-k Sparse Autoencoders with Geometric Rotation"
+authors: ["Anonymous"]
 venue: "ICLR 2026 @ Geometric Representations and Mechanisms (GRaM) Workshop"
 year: 2026
 status: "under-review"
@@ -8,11 +8,11 @@ date: "2026-02-01"
 arxiv: ""
 pdf: ""
 code: ""
-abstract: "We present RT-TopKSAE, a novel approach to improving sparse autoencoders by incorporating the rotation trick from geometric deep learning. Our method addresses the challenge of preserving principal components in high-dimensional latent spaces while maintaining sparsity constraints. By applying rotation-equivariant transformations during training, we achieve a 40% improvement in principal component retention compared to standard Top-k sparse autoencoders, while maintaining comparable sparsity levels. Our approach uses custom PyTorch autograd functions to preserve gradients through the rotation operations, enabling end-to-end training. We demonstrate the effectiveness of RT-TopKSAE on several benchmark tasks in mechanistic interpretability, showing improved feature disentanglement and interpretability of learned representations."
+abstract: "We present a novel approach to improving sparse autoencoders by incorporating rotation-equivariant transformations from geometric deep learning. Our method addresses the challenge of preserving principal components in high-dimensional latent spaces while maintaining sparsity constraints. By applying rotation-equivariant transformations during training, we achieve a 40% improvement in principal component retention compared to standard Top-k sparse autoencoders, while maintaining comparable sparsity levels. Our approach uses custom autograd functions to preserve gradients through the rotation operations, enabling end-to-end training. We demonstrate effectiveness on several benchmark tasks in mechanistic interpretability, showing improved feature disentanglement and interpretability of learned representations."
 tags: ["Sparse Autoencoders", "Geometric Deep Learning", "Mechanistic Interpretability", "Representation Learning"]
-bibtex: "@inproceedings{yusuf2026rttopksae,
-  title={RT-TopKSAE: Improving Top-k Sparse Autoencoders with the Rotation Trick},
-  author={Yusuf, Sulayman and Balwani, A.},
+bibtex: "@inproceedings{anonymous2026topksae,
+  title={[Double-Blind Review]},
+  author={Anonymous},
   booktitle={ICLR 2026 Workshop on Geometric Representations and Mechanisms},
   year={2026}
 }"
@@ -20,16 +20,16 @@ bibtex: "@inproceedings{yusuf2026rttopksae,
 
 ## Full Paper
 
-This paper is currently under review at ICLR 2026 @ GRaM Workshop. Links to arXiv preprint, PDF, and code will be added upon publication.
+This paper is currently under double-blind review at ICLR 2026 @ GRaM Workshop. Links to arXiv preprint, PDF, and code will be added upon publication.
 
 ## Abstract
 
-We present RT-TopKSAE, a novel approach to improving sparse autoencoders by incorporating the rotation trick from geometric deep learning. Our method addresses the challenge of preserving principal components in high-dimensional latent spaces while maintaining sparsity constraints.
+We present a novel approach to improving sparse autoencoders by incorporating rotation-equivariant transformations from geometric deep learning. Our method addresses the challenge of preserving principal components in high-dimensional latent spaces while maintaining sparsity constraints.
 
 ## Key Contributions
 
 1. **Rotation-Equivariant Sparsity**: Novel method combining geometric transformations with Top-k sparsity constraints
-2. **Gradient-Preserving Implementation**: Custom PyTorch autograd functions for end-to-end training
+2. **Gradient-Preserving Implementation**: Custom autograd functions for end-to-end training
 3. **Improved Interpretability**: 40% better principal component retention leading to more interpretable features
 4. **Empirical Validation**: Comprehensive evaluation on mechanistic interpretability benchmarks
 

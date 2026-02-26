@@ -114,7 +114,7 @@ export default function RotationTrickField({ scrollProgress }: { scrollProgress:
       ctx.fillStyle = 'rgba(148,163,184,0.3)'
       ctx.fillText('Baseline TopK-SAE', midX / 2, 20)
       ctx.fillStyle = 'rgba(6,182,212,0.4)'
-      ctx.fillText('RT-TopKSAE', midX + midX / 2, 20)
+      ctx.fillText('Ours (Geometric Rotation)', midX + midX / 2, 20)
 
       // Scale factor
       const scale = Math.min(W, H) * 0.28

@@ -153,14 +153,14 @@ export default function Home() {
             viewport={{ once: true }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Badge variant="cyan" className="mb-6 inline-block">Under Review · Double-Blind</Badge>
+            <Badge variant="cyan" className="mb-6 inline-block">Accepted</Badge>
             <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight" style={{ letterSpacing: '-0.025em' }}>
-              <span className="text-white">Geometric Rotation</span>
+              <span className="text-white">RT-TopKSAE</span>
               <br />
-              <span className="text-slate-600 text-3xl font-light">for Sparse Autoencoders</span>
+              <span className="text-slate-600 text-3xl font-light">Improving Top-k SAEs with the Rotation Trick</span>
             </h2>
             <p className="text-slate-500 mb-4 text-xs uppercase tracking-[0.3em] font-mono">
-              ICLR 2026 @ GRaM Workshop
+              ICLR 2026 @ Re-Align Research Workshop
             </p>
             <p className="text-slate-400 mb-10 leading-relaxed">
               The simplices forming above mirror the topology we exploit —

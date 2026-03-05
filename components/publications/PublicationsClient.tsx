@@ -162,8 +162,8 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
                       {/* Left: paper content */}
                       <div className="md:col-span-3">
                         <div className="flex flex-wrap items-center gap-2 mb-6">
-                          <Badge variant="cyan">Under Review</Badge>
-                          <Badge variant="purple">ICLR 2026 @ GRaM Workshop</Badge>
+                          <Badge variant="cyan">Accepted</Badge>
+                          <Badge variant="purple">ICLR 2026 @ Re-Align Research Workshop</Badge>
                         </div>
 
                         <h2 className="text-3xl md:text-4xl font-bold mb-5 text-white leading-tight"
@@ -264,7 +264,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
                             <p className="text-xs text-slate-700 font-mono">
                               {gradientMode === 'baseline'
                                 ? 'Baseline: gradient vanishes at sparse nodes'
-                                : 'Ours: gradient passes through gaps'}
+                                : 'RT-TopKSAE: gradient passes through gaps'}
                             </p>
                           </div>
                           <div className="flex gap-2">
@@ -285,7 +285,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
                                     : 'rgb(100,116,139)',
                                 }}
                               >
-                                {m === 'baseline' ? 'Baseline' : 'Ours'}
+                                {m === 'baseline' ? 'Baseline' : 'RT-TopKSAE'}
                               </button>
                             ))}
                           </div>

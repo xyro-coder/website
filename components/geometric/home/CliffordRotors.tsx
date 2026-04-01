@@ -2,27 +2,22 @@
 
 import { useEffect, useRef } from 'react'
 
+// Oriented bivector V(x,y): each needle aligns its plane perpendicular to cursor direction.
+// This visualises a live vector field — the bivector at (x,y) points toward the cursor,
+// demonstrating that the site "respects the local geometry of the user's interaction".
+
+const GRID_SPACING = 44
+
 interface Bivector {
-  x: number
-  y: number
-  angle: number      // current orientation
-  targetAngle: number
+  x: number   // canvas x (static grid position)
+  y: number   // canvas y (static grid position)
+  angle: number       // current displayed angle
   scale: number
-}
-
-const GRID_SPACING = 40
-
-// Rotor: R = cos(θ/2) + sin(θ/2)·e12
-// Applied rotation: V' = R V R†
-// For our 2D bivectors, this just means rotating the needle by θ
-function applyRotor(angle: number, scrollInfluence: number, waveX: number, waveY: number, t: number): number {
-  // Wave pattern from scroll
-  const wave = Math.sin(waveX * 0.08 + waveY * 0.05 + t) * 0.7
-  return angle + scrollInfluence * 0.3 + wave
 }
 
 export default function CliffordRotors() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const mouseRef = useRef<{ x: number; y: number } | null>(null)
   const scrollRef = useRef(0)
 
   useEffect(() => {
@@ -34,87 +29,104 @@ export default function CliffordRotors() {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      buildGrid()
     }
+
+    let bivectors: Bivector[] = []
+
+    const buildGrid = () => {
+      bivectors = []
+      for (let gy = GRID_SPACING / 2; gy < canvas.height + GRID_SPACING; gy += GRID_SPACING) {
+        for (let gx = GRID_SPACING / 2; gx < canvas.width + GRID_SPACING; gx += GRID_SPACING) {
+          bivectors.push({
+            x: gx,
+            y: gy,
+            angle: Math.random() * Math.PI,
+            scale: 0.55 + Math.random() * 0.45,
+          })
+        }
+      }
+    }
+
     resize()
     window.addEventListener('resize', resize)
 
-    const onScroll = () => {
-      scrollRef.current = window.scrollY
+    const onMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY }
     }
-    window.addEventListener('scroll', onScroll)
+    const onMouseLeave = () => { mouseRef.current = null }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseleave', onMouseLeave)
 
-    // Create grid of bivectors
-    const bivectors: Bivector[] = []
-    for (let y = GRID_SPACING / 2; y < 2000; y += GRID_SPACING) {
-      for (let x = GRID_SPACING / 2; x < 2000; x += GRID_SPACING) {
-        bivectors.push({
-          x,
-          y,
-          angle: Math.random() * Math.PI,
-          targetAngle: 0,
-          scale: 0.6 + Math.random() * 0.4,
-        })
-      }
-    }
+    const onScroll = () => { scrollRef.current = window.scrollY }
+    window.addEventListener('scroll', onScroll, { passive: true })
 
     let t = 0
     let raf: number
 
     const animate = () => {
       t += 0.01
-
-      // Recompute canvas-space positions
-      const w = canvas.width
-      const h = canvas.height
-
-      ctx.fillStyle = 'rgba(8, 12, 30, 0.2)'
-      ctx.fillRect(0, 0, w, h)
-
       const scroll = scrollRef.current
-      const scrollInfluence = (scroll / (document.body.scrollHeight || 1000)) * Math.PI * 4
+      const mouse = mouseRef.current
+      const W = canvas.width
+      const H = canvas.height
+
+      ctx.fillStyle = 'rgba(8,12,30,0.2)'
+      ctx.fillRect(0, 0, W, H)
 
       bivectors.forEach(bv => {
-        // Only draw if visible
-        if (bv.x > w + GRID_SPACING || bv.y - scroll > h + GRID_SPACING) return
-        if (bv.y - scroll < -GRID_SPACING) return
+        // Screen-space Y after scroll
+        const sy = bv.y - scroll
+        if (sy < -GRID_SPACING || sy > H + GRID_SPACING) return
 
-        const screenY = bv.y - scroll
+        let targetAngle: number
 
-        // Clifford rotor determines orientation
-        bv.targetAngle = applyRotor(
-          bv.angle,
-          scrollInfluence,
-          bv.x,
-          bv.y,
-          t
-        )
+        if (mouse) {
+          // Point toward cursor — Clifford rotor aligns to field direction V(x,y) = cursor - bv
+          const dx = mouse.x - bv.x
+          const dy = mouse.y - sy
+          targetAngle = Math.atan2(dy, dx)
+        } else {
+          // Ambient wave pattern when no cursor
+          targetAngle = Math.sin(bv.x * 0.012 + bv.y * 0.009 + t * 0.7) * Math.PI
+        }
 
-        // Smooth rotation using slerp-like approach
-        const diff = ((bv.targetAngle - bv.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
-        bv.angle += diff * 0.08
+        // Smooth SLERP toward target
+        const diff = ((targetAngle - bv.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+        bv.angle += diff * 0.09
 
-        // Draw bivector as oriented "needle" / thin rectangle
-        const len = GRID_SPACING * 0.4 * bv.scale
-        const width = 1.5
+        const len = GRID_SPACING * 0.38 * bv.scale
+        const hw = 1.4   // half-width of needle
 
         const cosA = Math.cos(bv.angle)
         const sinA = Math.sin(bv.angle)
-
-        // Perpendicular direction
         const cosP = Math.cos(bv.angle + Math.PI / 2)
         const sinP = Math.sin(bv.angle + Math.PI / 2)
 
-        // Four corners of the needle
-        const pts = [
-          [bv.x - cosA * len - cosP * width, screenY - sinA * len - sinP * width],
-          [bv.x + cosA * len - cosP * width, screenY + sinA * len - sinP * width],
-          [bv.x + cosA * len + cosP * width, screenY + sinA * len + sinP * width],
-          [bv.x - cosA * len + cosP * width, screenY - sinA * len + sinP * width],
-        ]
+        // Distance to cursor for brightness
+        let proximity = 0
+        if (mouse) {
+          const dx = mouse.x - bv.x
+          const dy = mouse.y - sy
+          const d = Math.sqrt(dx * dx + dy * dy)
+          proximity = Math.max(0, 1 - d / 220)
+        }
 
-        // Color based on orientation angle
-        const hue = ((bv.angle / Math.PI) * 60 + 180) % 360
-        const isAligned = Math.abs(Math.sin(bv.angle - t)) > 0.8
+        // Clifford rotor coloring: orientation encodes which "plane" the bivector spans
+        // close to cursor → cyan, far → purple, ambient → muted purple
+        const aligned = proximity > 0.3
+
+        const fillA = aligned ? 0.35 + proximity * 0.3 : 0.06 + Math.abs(Math.sin(bv.angle - t)) * 0.04
+        const strokeA = aligned ? 0.7 + proximity * 0.25 : 0.18 + Math.abs(Math.sin(bv.angle - t)) * 0.06
+        const col = aligned ? '6,182,212' : '168,85,247'
+
+        // Four-corner needle (oriented bivector)
+        const pts = [
+          [bv.x - cosA * len - cosP * hw, sy - sinA * len - sinP * hw],
+          [bv.x + cosA * len - cosP * hw, sy + sinA * len - sinP * hw],
+          [bv.x + cosA * len + cosP * hw, sy + sinA * len + sinP * hw],
+          [bv.x - cosA * len + cosP * hw, sy - sinA * len + sinP * hw],
+        ]
 
         ctx.beginPath()
         ctx.moveTo(pts[0][0], pts[0][1])
@@ -122,27 +134,30 @@ export default function CliffordRotors() {
         ctx.lineTo(pts[2][0], pts[2][1])
         ctx.lineTo(pts[3][0], pts[3][1])
         ctx.closePath()
-
-        if (isAligned) {
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.35)'
-          ctx.strokeStyle = 'rgba(6, 182, 212, 0.7)'
-        } else {
-          ctx.fillStyle = `rgba(168, 85, 247, 0.08)`
-          ctx.strokeStyle = `rgba(168, 85, 247, 0.2)`
-        }
+        ctx.fillStyle = `rgba(${col},${fillA})`
+        ctx.strokeStyle = `rgba(${col},${strokeA})`
         ctx.lineWidth = 0.5
         ctx.fill()
         ctx.stroke()
 
-        // Draw orientation dot at one end (shows direction of rotor)
+        // Direction dot at "head" of bivector
         ctx.beginPath()
-        ctx.arc(
-          bv.x + cosA * len,
-          screenY + sinA * len,
-          1.5, 0, Math.PI * 2
-        )
-        ctx.fillStyle = isAligned ? 'rgba(6, 182, 212, 0.8)' : 'rgba(168, 85, 247, 0.3)'
+        ctx.arc(bv.x + cosA * len, sy + sinA * len, aligned ? 2 : 1.2, 0, Math.PI * 2)
+        ctx.fillStyle = aligned
+          ? `rgba(6,182,212,${0.85 + proximity * 0.15})`
+          : `rgba(168,85,247,0.22)`
         ctx.fill()
+
+        // Glow for highly aligned bivectors
+        if (proximity > 0.55) {
+          const g = ctx.createRadialGradient(bv.x, sy, 0, bv.x, sy, len * 1.8)
+          g.addColorStop(0, `rgba(6,182,212,${proximity * 0.12})`)
+          g.addColorStop(1, 'rgba(6,182,212,0)')
+          ctx.beginPath()
+          ctx.arc(bv.x, sy, len * 1.8, 0, Math.PI * 2)
+          ctx.fillStyle = g
+          ctx.fill()
+        }
       })
 
       raf = requestAnimationFrame(animate)
@@ -153,6 +168,8 @@ export default function CliffordRotors() {
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseleave', onMouseLeave)
       window.removeEventListener('scroll', onScroll)
     }
   }, [])

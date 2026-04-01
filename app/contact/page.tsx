@@ -253,7 +253,7 @@ export default function ContactPage() {
             <div className="p-8" style={{ background: '#080c1e' }}>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-700 font-mono mb-4">Availability</p>
               <ul className="space-y-2">
-                {['Research collaborations', 'ML engineering internships (Summer 2026)', 'Speaking engagements', 'Open source contributions'].map(item => (
+                {['Research collaborations', 'Full-time ML/SWE roles (post-graduation 2028)', 'Speaking engagements', 'Open source contributions'].map(item => (
                   <li key={item} className="flex items-center gap-2 text-sm text-slate-400">
                     <span className="w-1 h-1 rounded-full bg-cyan-500 shrink-0" />
                     {item}

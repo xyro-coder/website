@@ -8,7 +8,7 @@ import Badge from '@/components/ui/Badge'
 import { motion } from 'framer-motion'
 
 // All 5 home visualizations — loaded client-side only
-const LatentManifold = dynamic(() => import('@/components/geometric/home/LatentManifold'), { ssr: false })
+const LatentCollapse = dynamic(() => import('@/components/geometric/home/LatentCollapse'), { ssr: false })
 const SimplicialComplex = dynamic(() => import('@/components/geometric/home/SimplicialComplex'), { ssr: false })
 const HyperbolicEmbedding = dynamic(() => import('@/components/geometric/home/HyperbolicEmbedding'), { ssr: false })
 const VectorField = dynamic(() => import('@/components/geometric/home/VectorField'), { ssr: false })
@@ -57,7 +57,7 @@ export default function Home() {
       {/* ─── SECTION 1: HERO — Latent Manifold + Hyperbolic Embedding ─── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
         <HyperbolicEmbedding />
-        <LatentManifold />
+        <LatentCollapse />
 
         <div className="relative z-10 container mx-auto max-w-7xl px-6 lg:px-8">
           <motion.div
@@ -86,7 +86,7 @@ export default function Home() {
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-wrap gap-3 mb-10">
-              <Badge variant="cyan">Research Fellow @ Algoverse AI</Badge>
+              <Badge variant="cyan">Incoming AI/ML Intern @ Analog Devices</Badge>
               <Badge variant="purple">UW Allen School</Badge>
             </motion.div>
 

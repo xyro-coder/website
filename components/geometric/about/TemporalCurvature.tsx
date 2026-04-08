@@ -319,8 +319,8 @@ export default function TemporalCurvature() {
   return (
     <canvas
       ref={canvasRef}
-      className="w-full rounded-2xl"
-      style={{ height: 380, display: 'block', border: '1px solid rgba(255,255,255,0.04)' }}
+      className="w-full canvas-void-tall"
+      style={{ height: 380, display: 'block' }}
     />
   )
 }

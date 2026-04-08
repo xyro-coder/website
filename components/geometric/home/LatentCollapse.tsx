@@ -198,7 +198,7 @@ export default function LatentCollapse() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
+      className="absolute inset-0 w-full h-full canvas-void"
       style={{ mixBlendMode: 'screen', pointerEvents: 'none' }}
     />
   )

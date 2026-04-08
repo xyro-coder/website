@@ -25,13 +25,13 @@ const StructuralInvariance = dynamic(
 )
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 22 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 24 } },
 }
 
 const stagger = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
+  show: { transition: { staggerChildren: 0.07 } },
 }
 
 function TiltCard({ children, className = '', style = {} }: {
@@ -59,11 +59,22 @@ function TiltCard({ children, className = '', style = {} }: {
   )
 }
 
+// No-box: content floats on the dark void.
+// Only the left-accent line grounds each entry spatially.
 const GLASS = {
-  background: 'rgba(8,12,30,0.55)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.05)',
+  background: 'transparent',
+  backdropFilter: 'blur(4px)',
+  WebkitBackdropFilter: 'blur(4px)',
+  border: 'none',
+  borderRadius: 0,
+}
+
+// For bio and heavier text blocks, a whisper of background aids readability
+const GLASS_LIGHT = {
+  background: 'rgba(8,12,30,0.28)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: 'none',
   borderRadius: 20,
 }
 
@@ -106,7 +117,7 @@ export default function AboutPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <TiltCard style={{ ...GLASS, padding: '2.5rem' }}>
+            <TiltCard style={{ ...GLASS_LIGHT, padding: '2.5rem' }}>
               <h2 className="text-3xl font-bold mb-6 text-white" style={{ letterSpacing: '-0.02em' }}>Background</h2>
               <div className="space-y-4 text-slate-400 leading-relaxed">
                 <p>
@@ -160,8 +171,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="rounded-3xl overflow-hidden mb-8"
-              style={{ background: 'rgba(8,12,30,0.7)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="mb-8">
               <LatentSynthesis />
             </div>
 
@@ -236,7 +246,7 @@ export default function AboutPage() {
             >
               {/* Analog Devices — incoming */}
               <motion.div variants={fadeUp}>
-                <TiltCard style={{ ...GLASS, borderLeft: '2px solid rgba(168,85,247,0.5)', padding: '1.75rem' }}>
+                <TiltCard style={{ borderLeft: '2px solid rgba(168,85,247,0.45)', paddingLeft: '1.75rem', paddingTop: '0.5rem' }}>
                   <Badge variant="purple" className="mb-3">Incoming · Summer 2026</Badge>
                   <h3 className="text-2xl font-bold text-white mb-1" style={{ letterSpacing: '-0.01em' }}>Analog Devices</h3>
                   <p className="font-semibold mb-2 text-sm" style={{ color: '#a855f7' }}>AI/ML Intern — Graph ML &amp; Embeddings</p>
@@ -249,7 +259,7 @@ export default function AboutPage() {
 
               {/* Stealth AI — current */}
               <motion.div variants={fadeUp}>
-                <TiltCard style={{ ...GLASS, borderLeft: '2px solid rgba(6,182,212,0.5)', padding: '1.75rem' }}>
+                <TiltCard style={{ borderLeft: '2px solid rgba(6,182,212,0.45)', paddingLeft: '1.75rem', paddingTop: '0.5rem' }}>
                   <Badge variant="cyan" className="mb-3">Current · Feb 2026 → Present</Badge>
                   <h3 className="text-2xl font-bold text-white mb-1" style={{ letterSpacing: '-0.01em' }}>Stealth AI Startup</h3>
                   <p className="font-semibold mb-4 text-sm" style={{ color: '#06b6d4' }}>ML Research Engineer</p>
@@ -275,7 +285,7 @@ export default function AboutPage() {
               viewport={{ once: true }}
               transition={{ delay: 0.1, duration: 0.5 }}
             >
-              <TiltCard style={{ ...GLASS, borderLeft: '2px solid rgba(168,85,247,0.4)', padding: '1.75rem' }}>
+              <TiltCard style={{ borderLeft: '2px solid rgba(168,85,247,0.38)', paddingLeft: '1.75rem', paddingTop: '0.5rem' }}>
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="flex-grow">
                     <Badge variant="purple" className="mb-3">May 2025 – Mar 2026</Badge>
@@ -308,7 +318,7 @@ export default function AboutPage() {
               viewport={{ once: true }}
               transition={{ delay: 0.15, duration: 0.5 }}
             >
-              <TiltCard style={{ ...GLASS, padding: '2rem' }}>
+              <TiltCard style={{ ...GLASS_LIGHT, padding: '2rem' }}>
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-2xl font-bold text-white mb-1" style={{ letterSpacing: '-0.01em' }}>University of Washington</h3>

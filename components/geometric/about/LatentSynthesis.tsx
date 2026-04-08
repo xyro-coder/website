@@ -1,83 +1,67 @@
 'use client'
 
+// Force-directed skill graph with draggable nodes.
+// Dragging one node applies stronger spring tension to all its semantic
+// neighbors — the "equivariant cluster" reacts as a unit.
 import { useEffect, useRef } from 'react'
 
 interface SkillNode {
   id: string
   label: string
-  cluster: number  // 0=ML, 1=Backend, 2=Math, 3=Languages
-  x: number
-  y: number
-  vx: number
-  vy: number
+  cluster: number // 0=ML, 1=Backend, 2=Math, 3=Languages
+  x: number; y: number
+  vx: number; vy: number
   radius: number
-  activation: number // 0-1, pulsing
+  activation: number
   hovered: boolean
-  connections: number[] // indices
+  dragged: boolean
+  connections: number[]
 }
 
 const SKILLS: { label: string; cluster: number; radius: number }[] = [
-  // ML cluster
-  { label: 'PyTorch', cluster: 0, radius: 18 },
-  { label: 'PyTorch Lightning', cluster: 0, radius: 14 },
-  { label: 'scikit-learn', cluster: 0, radius: 13 },
-  { label: 'NumPy', cluster: 0, radius: 13 },
-  { label: 'Pandas', cluster: 0, radius: 12 },
-  { label: 'LlamaIndex', cluster: 0, radius: 11 },
-  // Math / theory cluster
-  { label: 'Linear Algebra', cluster: 2, radius: 17 },
-  { label: 'Real Analysis', cluster: 2, radius: 14 },
-  { label: 'Statistics', cluster: 2, radius: 14 },
-  { label: 'Discrete Math', cluster: 2, radius: 12 },
-  // Backend cluster
-  { label: 'FastAPI', cluster: 1, radius: 13 },
-  { label: 'Flask', cluster: 1, radius: 12 },
-  { label: 'Docker', cluster: 1, radius: 14 },
-  { label: 'PostgreSQL', cluster: 1, radius: 13 },
-  { label: 'AWS', cluster: 1, radius: 12 },
-  { label: 'PyTest', cluster: 1, radius: 11 },
-  { label: 'GitHub Actions', cluster: 1, radius: 11 },
-  // Languages cluster
-  { label: 'Python', cluster: 3, radius: 20 },
-  { label: 'C++', cluster: 3, radius: 16 },
-  { label: 'TypeScript', cluster: 3, radius: 15 },
-  { label: 'JavaScript', cluster: 3, radius: 13 },
-  { label: 'Java', cluster: 3, radius: 13 },
-  { label: 'SQL', cluster: 3, radius: 12 },
+  { label: 'PyTorch',          cluster: 0, radius: 18 },
+  { label: 'PyTorch Lightning',cluster: 0, radius: 14 },
+  { label: 'scikit-learn',     cluster: 0, radius: 13 },
+  { label: 'NumPy',            cluster: 0, radius: 13 },
+  { label: 'Pandas',           cluster: 0, radius: 12 },
+  { label: 'LlamaIndex',       cluster: 0, radius: 11 },
+  { label: 'Linear Algebra',   cluster: 2, radius: 17 },
+  { label: 'Real Analysis',    cluster: 2, radius: 14 },
+  { label: 'Statistics',       cluster: 2, radius: 14 },
+  { label: 'Discrete Math',    cluster: 2, radius: 12 },
+  { label: 'FastAPI',          cluster: 1, radius: 13 },
+  { label: 'Flask',            cluster: 1, radius: 12 },
+  { label: 'Docker',           cluster: 1, radius: 14 },
+  { label: 'PostgreSQL',       cluster: 1, radius: 13 },
+  { label: 'AWS',              cluster: 1, radius: 12 },
+  { label: 'PyTest',           cluster: 1, radius: 11 },
+  { label: 'GitHub Actions',   cluster: 1, radius: 11 },
+  { label: 'Python',           cluster: 3, radius: 20 },
+  { label: 'C++',              cluster: 3, radius: 16 },
+  { label: 'TypeScript',       cluster: 3, radius: 15 },
+  { label: 'JavaScript',       cluster: 3, radius: 13 },
+  { label: 'Java',             cluster: 3, radius: 13 },
+  { label: 'SQL',              cluster: 3, radius: 12 },
 ]
 
-// Connections that make semantic sense
 const EDGE_PAIRS: [string, string][] = [
-  ['PyTorch', 'Python'],
-  ['PyTorch', 'Linear Algebra'],
-  ['PyTorch', 'NumPy'],
-  ['Linear Algebra', 'NumPy'],
-  ['Real Analysis', 'Linear Algebra'],
-  ['Statistics', 'Linear Algebra'],
-  ['Statistics', 'Pandas'],
-  ['Discrete Math', 'Linear Algebra'],
-  ['NumPy', 'Pandas'],
-  ['FastAPI', 'Python'],
-  ['Flask', 'Python'],
-  ['PostgreSQL', 'SQL'],
-  ['Docker', 'AWS'],
-  ['GitHub Actions', 'Docker'],
-  ['PyTest', 'Python'],
-  ['FastAPI', 'Docker'],
-  ['scikit-learn', 'NumPy'],
-  ['scikit-learn', 'Python'],
-  ['LlamaIndex', 'Python'],
-  ['LlamaIndex', 'FastAPI'],
-  ['PyTorch Lightning', 'PyTorch'],
-  ['C++', 'Linear Algebra'],
+  ['PyTorch', 'Python'], ['PyTorch', 'Linear Algebra'], ['PyTorch', 'NumPy'],
+  ['Linear Algebra', 'NumPy'], ['Real Analysis', 'Linear Algebra'],
+  ['Statistics', 'Linear Algebra'], ['Statistics', 'Pandas'],
+  ['Discrete Math', 'Linear Algebra'], ['NumPy', 'Pandas'],
+  ['FastAPI', 'Python'], ['Flask', 'Python'], ['PostgreSQL', 'SQL'],
+  ['Docker', 'AWS'], ['GitHub Actions', 'Docker'], ['PyTest', 'Python'],
+  ['FastAPI', 'Docker'], ['scikit-learn', 'NumPy'], ['scikit-learn', 'Python'],
+  ['LlamaIndex', 'Python'], ['LlamaIndex', 'FastAPI'],
+  ['PyTorch Lightning', 'PyTorch'], ['C++', 'Linear Algebra'],
   ['TypeScript', 'Python'],
 ]
 
 const CLUSTER_COLORS = [
-  { fill: '6, 182, 212', label: 'ML & AI' },       // cyan
-  { fill: '99, 102, 241', label: 'Backend' },        // indigo
-  { fill: '168, 85, 247', label: 'Mathematics' },    // purple
-  { fill: '34, 197, 94', label: 'Languages' },       // green
+  { fill: '6, 182, 212',   label: 'ML & AI' },
+  { fill: '99, 102, 241',  label: 'Backend' },
+  { fill: '168, 85, 247',  label: 'Mathematics' },
+  { fill: '34, 197, 94',   label: 'Languages' },
 ]
 
 const CLUSTER_CENTERS = [
@@ -89,7 +73,6 @@ const CLUSTER_CENTERS = [
 
 export default function LatentSynthesis() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const mouseRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -100,24 +83,25 @@ export default function LatentSynthesis() {
     const resize = () => {
       canvas.width = canvas.offsetWidth
       canvas.height = canvas.offsetHeight
+      // Re-init cluster positions on resize
+      nodes.forEach(n => {
+        const cc = CLUSTER_CENTERS[n.cluster]
+        n.x = cc.x * canvas.width + (Math.random() - 0.5) * 100
+        n.y = cc.y * canvas.height + (Math.random() - 0.5) * 100
+      })
     }
-    resize()
-    window.addEventListener('resize', resize)
 
     // Build nodes
-    const nodes: SkillNode[] = SKILLS.map((s, i) => {
+    const nodes: SkillNode[] = SKILLS.map((s) => {
       const cc = CLUSTER_CENTERS[s.cluster]
       return {
-        id: s.label,
-        label: s.label,
-        cluster: s.cluster,
-        x: cc.x * canvas.width + (Math.random() - 0.5) * 120,
-        y: cc.y * canvas.height + (Math.random() - 0.5) * 120,
-        vx: 0,
-        vy: 0,
+        id: s.label, label: s.label, cluster: s.cluster,
+        x: cc.x * 800 + (Math.random() - 0.5) * 120,
+        y: cc.y * 500 + (Math.random() - 0.5) * 120,
+        vx: 0, vy: 0,
         radius: s.radius,
         activation: Math.random(),
-        hovered: false,
+        hovered: false, dragged: false,
         connections: [],
       }
     })
@@ -134,14 +118,74 @@ export default function LatentSynthesis() {
       }
     })
 
+    resize()
+    window.addEventListener('resize', resize)
+
+    // ── Drag state ──────────────────────────────────────────────────────────
+    let draggedIdx: number | null = null
+    let mouseX = 0
+    let mouseY = 0
+    let hoveredIdx = -1
+
+    const getNodeAt = (mx: number, my: number): number => {
+      let best = -1
+      let bestD = Infinity
+      nodes.forEach((n, i) => {
+        const dx = n.x - mx; const dy = n.y - my
+        const d = Math.sqrt(dx * dx + dy * dy)
+        if (d < n.radius + 10 && d < bestD) { bestD = d; best = i }
+      })
+      return best
+    }
+
     const onMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      mouseX = e.clientX - rect.left
+      mouseY = e.clientY - rect.top
+      if (draggedIdx !== null) {
+        nodes[draggedIdx].x = mouseX
+        nodes[draggedIdx].y = mouseY
+        nodes[draggedIdx].vx = 0
+        nodes[draggedIdx].vy = 0
+        canvas.style.cursor = 'grabbing'
+      } else {
+        hoveredIdx = getNodeAt(mouseX, mouseY)
+        canvas.style.cursor = hoveredIdx >= 0 ? 'grab' : 'crosshair'
+      }
     }
-    const onMouseLeave = () => { mouseRef.current = null }
+
+    const onMouseDown = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      mouseX = e.clientX - rect.left
+      mouseY = e.clientY - rect.top
+      const hit = getNodeAt(mouseX, mouseY)
+      if (hit >= 0) {
+        draggedIdx = hit
+        nodes[hit].dragged = true
+        canvas.style.cursor = 'grabbing'
+        e.preventDefault()
+      }
+    }
+
+    const releaseDrag = () => {
+      if (draggedIdx !== null) {
+        nodes[draggedIdx].dragged = false
+        draggedIdx = null
+      }
+      canvas.style.cursor = 'crosshair'
+    }
+
+    const onMouseLeave = () => {
+      releaseDrag()
+      hoveredIdx = -1
+    }
+
     canvas.addEventListener('mousemove', onMouseMove)
+    canvas.addEventListener('mousedown', onMouseDown)
+    canvas.addEventListener('mouseup', releaseDrag)
     canvas.addEventListener('mouseleave', onMouseLeave)
 
+    // ── Animation ────────────────────────────────────────────────────────────
     let t = 0
     let raf: number
 
@@ -149,142 +193,129 @@ export default function LatentSynthesis() {
       t += 0.016
       const W = canvas.width
       const H = canvas.height
-      const mouse = mouseRef.current
 
-      ctx.fillStyle = 'rgba(8, 12, 30, 0.25)'
+      ctx.fillStyle = 'rgba(8, 12, 30, 0.28)'
       ctx.fillRect(0, 0, W, H)
 
-      // Update hover state
-      nodes.forEach(n => {
-        n.hovered = false
-        if (mouse) {
-          const dx = n.x - mouse.x
-          const dy = n.y - mouse.y
-          if (Math.sqrt(dx * dx + dy * dy) < n.radius + 8) n.hovered = true
-        }
+      // Determine hover / drag states
+      nodes.forEach((n, i) => {
+        n.hovered = i === hoveredIdx && draggedIdx === null
+        n.dragged = i === draggedIdx
       })
 
-      // Force-directed physics
+      // ── Force-directed physics ──
       nodes.forEach((a, i) => {
+        if (a.dragged) return   // skip physics for dragged node
+
         // Cluster attraction
         const cc = CLUSTER_CENTERS[a.cluster]
-        const tcx = cc.x * W
-        const tcy = cc.y * H
+        const tcx = cc.x * W; const tcy = cc.y * H
         a.vx += (tcx - a.x) * 0.003
         a.vy += (tcy - a.y) * 0.003
 
-        // Node repulsion
+        // Node–node repulsion
         nodes.forEach((b, j) => {
           if (i === j) return
-          const dx = a.x - b.x
-          const dy = a.y - b.y
+          const dx = a.x - b.x; const dy = a.y - b.y
           const d2 = dx * dx + dy * dy
           if (d2 < 1) return
           const d = Math.sqrt(d2)
-          const minD = (a.radius + b.radius) * 3
+          const minD = (a.radius + b.radius) * 3.2
           if (d < minD) {
-            const force = (minD - d) / minD * 0.15
-            a.vx += (dx / d) * force
-            a.vy += (dy / d) * force
+            const f = (minD - d) / minD * 0.16
+            a.vx += (dx / d) * f; a.vy += (dy / d) * f
           }
         })
 
-        // Edge spring
+        // Semantic edge springs
         a.connections.forEach(j => {
           const b = nodes[j]
-          const dx = b.x - a.x
-          const dy = b.y - a.y
+          const dx = b.x - a.x; const dy = b.y - a.y
           const d = Math.sqrt(dx * dx + dy * dy)
           const rest = 90
+          // If the connected node is being dragged, triple the spring strength
+          const springK = b.dragged ? 0.14 : 0.04
           if (d > 0) {
-            const force = (d - rest) / rest * 0.04
-            a.vx += dx / d * force
-            a.vy += dy / d * force
+            const f = (d - rest) / rest * springK
+            a.vx += (dx / d) * f; a.vy += (dy / d) * f
           }
         })
 
-        a.vx *= 0.88
-        a.vy *= 0.88
-        a.x += a.vx
-        a.y += a.vy
+        a.vx *= 0.87; a.vy *= 0.87
+        a.x += a.vx; a.y += a.vy
         a.x = Math.max(a.radius + 5, Math.min(W - a.radius - 5, a.x))
         a.y = Math.max(a.radius + 5, Math.min(H - a.radius - 5, a.y))
 
-        // Activation pulse
-        a.activation = (Math.sin(t * 1.5 + i * 0.7) + 1) / 2
+        a.activation = (Math.sin(t * 1.5 + SKILLS.findIndex(s => s.label === a.id) * 0.7) + 1) / 2
       })
 
-      // Draw edges
+      // ── Draw edges ──
       edges.forEach(([ai, bi]) => {
-        const a = nodes[ai]
-        const b = nodes[bi]
-        const highlight = a.hovered || b.hovered
-        const dx = b.x - a.x
-        const dy = b.y - a.y
+        const a = nodes[ai]; const b = nodes[bi]
+        const highlight = a.hovered || b.hovered || a.dragged || b.dragged
+        const dx = b.x - a.x; const dy = b.y - a.y
         const d = Math.sqrt(dx * dx + dy * dy)
-        const maxD = 200
-
+        const maxD = 220
         if (d > maxD) return
 
-        const alpha = highlight ? 0.6 : (1 - d / maxD) * 0.2
-        const colorA = CLUSTER_COLORS[a.cluster].fill
-        const colorB = CLUSTER_COLORS[b.cluster].fill
+        const alpha = highlight ? 0.65 : (1 - d / maxD) * 0.22
+        const cA = CLUSTER_COLORS[a.cluster].fill
+        const cB = CLUSTER_COLORS[b.cluster].fill
 
         const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y)
-        grad.addColorStop(0, `rgba(${colorA}, ${alpha})`)
-        grad.addColorStop(1, `rgba(${colorB}, ${alpha})`)
-
-        ctx.beginPath()
-        ctx.moveTo(a.x, a.y)
-        ctx.lineTo(b.x, b.y)
+        grad.addColorStop(0, `rgba(${cA}, ${alpha})`)
+        grad.addColorStop(1, `rgba(${cB}, ${alpha})`)
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y)
         ctx.strokeStyle = grad
-        ctx.lineWidth = highlight ? 1.5 : 0.7
+        ctx.lineWidth = highlight ? 1.8 : 0.7
         ctx.stroke()
 
-        // Animated particle along edge
+        // Animated flow particle on highlighted edge
         if (highlight) {
-          const progress = (t * 0.5 + ai * 0.3) % 1
-          const px = a.x + dx * progress
-          const py = a.y + dy * progress
-          ctx.beginPath()
-          ctx.arc(px, py, 2, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${colorA}, 0.9)`
+          const prog = ((t * 0.6 + ai * 0.3) % 1)
+          const px = a.x + dx * prog; const py = a.y + dy * prog
+          ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${cA}, 0.95)`
           ctx.fill()
         }
       })
 
-      // Draw nodes
-      nodes.forEach((n, i) => {
+      // ── Draw nodes ──
+      nodes.forEach((n) => {
         const col = CLUSTER_COLORS[n.cluster].fill
-        const glowAlpha = n.hovered ? 0.5 : n.activation * 0.2
+        const isActive = n.hovered || n.dragged
+        const glowAlpha = isActive ? 0.55 : n.activation * 0.18
         const r = n.radius
 
-        // Glow
+        // Glow halo
         if (glowAlpha > 0.05) {
-          const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3)
+          const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * (isActive ? 4 : 3))
           glow.addColorStop(0, `rgba(${col}, ${glowAlpha})`)
           glow.addColorStop(1, `rgba(${col}, 0)`)
-          ctx.beginPath()
-          ctx.arc(n.x, n.y, r * 3, 0, Math.PI * 2)
-          ctx.fillStyle = glow
-          ctx.fill()
+          ctx.beginPath(); ctx.arc(n.x, n.y, r * (isActive ? 4 : 3), 0, Math.PI * 2)
+          ctx.fillStyle = glow; ctx.fill()
         }
 
-        // Core circle
-        ctx.beginPath()
-        ctx.arc(n.x, n.y, r, 0, Math.PI * 2)
-        ctx.fillStyle = n.hovered
-          ? `rgba(${col}, 0.5)`
+        // Drag ring (extra outer ring while dragging)
+        if (n.dragged) {
+          ctx.beginPath(); ctx.arc(n.x, n.y, r * 1.8, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(${col}, 0.45)`
+          ctx.lineWidth = 1.5; ctx.stroke()
+        }
+
+        // Core fill
+        ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2)
+        ctx.fillStyle = isActive
+          ? `rgba(${col}, 0.55)`
           : `rgba(${col}, ${0.1 + n.activation * 0.15})`
         ctx.fill()
-        ctx.strokeStyle = `rgba(${col}, ${n.hovered ? 0.9 : 0.4 + n.activation * 0.3})`
-        ctx.lineWidth = n.hovered ? 2 : 1
+        ctx.strokeStyle = `rgba(${col}, ${isActive ? 0.95 : 0.4 + n.activation * 0.3})`
+        ctx.lineWidth = isActive ? 2.5 : 1
         ctx.stroke()
 
         // Label
-        const fontSize = n.hovered ? 11 : 9
-        ctx.font = `${fontSize}px monospace`
-        ctx.fillStyle = n.hovered
+        ctx.font = `${isActive ? 11 : 9}px monospace`
+        ctx.fillStyle = isActive
           ? `rgba(${col}, 1)`
           : `rgba(${col}, ${0.5 + n.activation * 0.4})`
         ctx.textAlign = 'center'
@@ -298,8 +329,21 @@ export default function LatentSynthesis() {
         ctx.font = '9px monospace'
         ctx.fillStyle = `rgba(${col}, 0.3)`
         ctx.textAlign = 'center'
-        ctx.fillText(CLUSTER_COLORS[i].label.toUpperCase(), cc.x * W, cc.y * H - 60)
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillText(CLUSTER_COLORS[i].label.toUpperCase(), cc.x * W, cc.y * H - 65)
       })
+
+      // Caption
+      ctx.font = '8px monospace'
+      ctx.fillStyle = 'rgba(100,120,150,0.45)'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'alphabetic'
+      ctx.fillText(
+        draggedIdx !== null
+          ? `DRAGGING: ${nodes[draggedIdx].label}  ·  cluster reacting via equivariant spring force`
+          : 'FORCE-DIRECTED GRAPH  ·  drag any node — its cluster follows via semantic edge springs',
+        16, H - 14
+      )
 
       raf = requestAnimationFrame(animate)
     }
@@ -310,6 +354,8 @@ export default function LatentSynthesis() {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
       canvas.removeEventListener('mousemove', onMouseMove)
+      canvas.removeEventListener('mousedown', onMouseDown)
+      canvas.removeEventListener('mouseup', releaseDrag)
       canvas.removeEventListener('mouseleave', onMouseLeave)
     }
   }, [])
@@ -317,7 +363,7 @@ export default function LatentSynthesis() {
   return (
     <canvas
       ref={canvasRef}
-      className="w-full"
+      className="w-full canvas-void"
       style={{ height: 480, display: 'block', cursor: 'crosshair' }}
     />
   )

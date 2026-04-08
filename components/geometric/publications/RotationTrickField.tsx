@@ -47,6 +47,9 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
     setKatexHTML(katex.renderToString('\\mathbf{R} \\in SO(3)', { throwOnError: false, output: 'html' }))
   }, [])
 
+  const matrixRef = useRef<HTMLPreElement>(null)
+  const fRotRef = useRef(0)
+
   const toggle = useCallback(() => {
     const next = !rotRef.current
     rotRef.current = next
@@ -143,6 +146,18 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
           { dx: 0, dy: 0, dz: 1, col: '99,102,241', label: 'e₃' },
         ]
         const fRot = t * 0.32
+        fRotRef.current = fRot
+
+        // Live matrix display — update DOM directly (no React re-render overhead)
+        if (matrixRef.current) {
+          const c = Math.cos(fRot)
+          const s = Math.sin(fRot)
+          const fmt = (v: number) => (v >= 0 ? ' ' : '') + v.toFixed(3)
+          matrixRef.current.textContent =
+            `⎡${fmt(c)} ${fmt(-s)}  0.000⎤\n` +
+            `⎢${fmt(s)}  ${fmt(c)}  0.000⎥\n` +
+            `⎣ 0.000   0.000  1.000⎦`
+        }
         frameAxes.forEach(({ dx, dy, dz, col, label }) => {
           const ex = Math.cos(fRot) * dx - Math.sin(fRot) * dy
           const ey = Math.sin(fRot) * dx + Math.cos(fRot) * dy
@@ -241,9 +256,36 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
     <div className="relative w-full" style={{ height: 380 }}>
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full canvas-void"
         style={{ cursor: 'crosshair' }}
       />
+
+      {/* ── Live SO(3) matrix — updates every frame via direct DOM write ── */}
+      <div
+        className="absolute top-4 left-4 z-10 transition-opacity duration-500"
+        style={{ opacity: rotationOn ? 1 : 0.3 }}
+      >
+        <div className="text-xs font-mono text-slate-600 mb-1 uppercase tracking-widest">
+          R ∈ SO(3)
+        </div>
+        <pre
+          ref={matrixRef}
+          className="text-xs font-mono leading-relaxed"
+          style={{
+            color: rotationOn ? 'rgba(6,182,212,0.85)' : 'rgba(168,85,247,0.45)',
+            background: 'rgba(8,12,30,0.6)',
+            backdropFilter: 'blur(8px)',
+            padding: '0.5rem 0.75rem',
+            borderRadius: 8,
+            border: `1px solid ${rotationOn ? 'rgba(6,182,212,0.2)' : 'rgba(168,85,247,0.1)'}`,
+            letterSpacing: '0.03em',
+            whiteSpace: 'pre',
+            transition: 'color 0.5s, border-color 0.5s',
+          }}
+        >
+          {`⎡ 1.000  0.000  0.000⎤\n⎢ 0.000  1.000  0.000⎥\n⎣ 0.000  0.000  1.000⎦`}
+        </pre>
+      </div>
 
       {/* ── Toggle button ── */}
       <div className="absolute top-4 right-4 flex items-center gap-3 z-10">

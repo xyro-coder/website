@@ -89,12 +89,17 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
       t += 0.012
       const rtMode = modeRef.current === 'rt'
 
-      ctx.clearRect(0, 0, W, H)
+      // Partial clear — trail persistence creates motion smear
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'
+      ctx.fillRect(0, 0, W, H)
+
+      // Additive blending — where light pipes cross, intersection doubles in brightness
+      ctx.globalCompositeOperation = 'lighter'
 
       const nodes = nodesRef.current
+      const col = rtMode ? '6,182,212' : '168,85,247'
 
-      // ── Draw filter mesh ──
-      // Connect adjacent nodes with lines (the sparsity filter mesh)
+      // ── Draw filter mesh as light pipes ──
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x
@@ -103,55 +108,73 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
           if (d < 0.22) {
             const x1 = nodes[i].x * W; const y1 = nodes[i].y * H
             const x2 = nodes[j].x * W; const y2 = nodes[j].y * H
+
+            // Core bright line (additive — intersections naturally hot-spot)
+            const grad = ctx.createLinearGradient(x1, y1, x2, y2)
+            grad.addColorStop(0, `rgba(${col},0.35)`)
+            grad.addColorStop(0.5, `rgba(${col},0.55)`)
+            grad.addColorStop(1, `rgba(${col},0.35)`)
             ctx.beginPath()
             ctx.moveTo(x1, y1)
             ctx.lineTo(x2, y2)
-            ctx.strokeStyle = rtMode
-              ? 'rgba(6,182,212,0.12)'
-              : 'rgba(168,85,247,0.15)'
-            ctx.lineWidth = 0.8
+            ctx.strokeStyle = grad
+            ctx.lineWidth = 1.2
+            ctx.stroke()
+
+            // Glow halo around each pipe (wider, dimmer — additive accumulates)
+            ctx.beginPath()
+            ctx.moveTo(x1, y1)
+            ctx.lineTo(x2, y2)
+            ctx.strokeStyle = `rgba(${col},0.1)`
+            ctx.lineWidth = 6
             ctx.stroke()
           }
         }
       }
 
-      // Node dots
+      // Node dots — brighter with additive blending
       nodes.forEach(n => {
         const nx = n.x * W; const ny = n.y * H
-        ctx.beginPath()
-        ctx.arc(nx, ny, 3.5, 0, Math.PI * 2)
-        ctx.fillStyle = rtMode
-          ? 'rgba(6,182,212,0.2)'
-          : 'rgba(168,85,247,0.35)'
+
+        // Outer glow
+        const g = ctx.createRadialGradient(nx, ny, 0, nx, ny, 14)
+        g.addColorStop(0, `rgba(${col},0.45)`)
+        g.addColorStop(1, 'rgba(0,0,0,0)')
+        ctx.beginPath(); ctx.arc(nx, ny, 14, 0, Math.PI * 2)
+        ctx.fillStyle = g; ctx.fill()
+
+        // Core
+        ctx.beginPath(); ctx.arc(nx, ny, 3, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${col},0.9)`
         ctx.fill()
-        ctx.strokeStyle = rtMode
-          ? 'rgba(6,182,212,0.45)'
-          : 'rgba(168,85,247,0.65)'
-        ctx.lineWidth = 0.8
-        ctx.stroke()
       })
 
-      // Filter label
+      // Filter label (drawn in normal mode — text on top of additive layer)
+      ctx.globalCompositeOperation = 'source-over'
       ctx.font = '8px monospace'
       ctx.textAlign = 'center'
-      ctx.fillStyle = rtMode ? 'rgba(6,182,212,0.3)' : 'rgba(168,85,247,0.35)'
-      ctx.fillText(
-        rtMode ? '↓  Sparsity Filter  (gradient passes through)' : '↓  Sparsity Filter  (gradient vanishes)',
-        W / 2, nodes[0].y * H - 8
-      )
+      ctx.fillStyle = rtMode ? 'rgba(6,182,212,0.35)' : 'rgba(168,85,247,0.4)'
+      if (nodes.length > 0) {
+        ctx.fillText(
+          rtMode ? '↓  Sparsity Filter  (gradient passes through)' : '↓  Sparsity Filter  (gradient vanishes)',
+          W / 2, nodes[0].y * H - 10
+        )
+      }
 
-      // BibTeX destination zone (bottom 20%)
+      // BibTeX destination zone
       const bibY = H * 0.78
+      ctx.globalCompositeOperation = 'lighter'
       const bibGrad = ctx.createLinearGradient(0, bibY, 0, H)
       bibGrad.addColorStop(0, 'rgba(6,182,212,0)')
-      bibGrad.addColorStop(0.5, `rgba(6,182,212,${rtMode ? 0.04 : 0.01})`)
+      bibGrad.addColorStop(0.5, `rgba(6,182,212,${rtMode ? 0.06 : 0.015})`)
       bibGrad.addColorStop(1, 'rgba(6,182,212,0)')
       ctx.fillStyle = bibGrad
       ctx.fillRect(0, bibY, W, H - bibY)
+      ctx.globalCompositeOperation = 'source-over'
 
       ctx.font = '9px monospace'
       ctx.textAlign = 'center'
-      ctx.fillStyle = rtMode ? 'rgba(6,182,212,0.25)' : 'rgba(100,120,160,0.15)'
+      ctx.fillStyle = rtMode ? 'rgba(6,182,212,0.3)' : 'rgba(100,120,160,0.18)'
       ctx.fillText('@ BibTeX · RT-TopKSAE', W / 2, bibY + 14)
 
       // ── Update & draw particles ──
@@ -201,34 +224,36 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
       bibtexLitRef.current = newLit
       if (newLit.length > 0) setBibtexLit([...newLit])
 
-      // Draw particles + trails
+      // Draw particles + trails — all additive, so density accumulates naturally
       particlesRef.current.forEach(p => {
         if (p.absorbed) return
         const color = rtMode ? '6,182,212' : '168,85,247'
 
-        // Trail
+        // Trail — smears light behind particle
         p.trail.forEach((pt, i) => {
-          const trailAlpha = (i / p.trail.length) * p.alpha * 0.3
+          const trailAlpha = (i / p.trail.length) * p.alpha * 0.45
           ctx.beginPath()
-          ctx.arc(pt.x, pt.y, 1, 0, Math.PI * 2)
+          ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2)
           ctx.fillStyle = `rgba(${color},${trailAlpha})`
           ctx.fill()
         })
 
-        // Glow
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 6)
-        g.addColorStop(0, `rgba(${color},${p.alpha * 0.5})`)
-        g.addColorStop(1, `rgba(${color},0)`)
+        // Glow — larger, because additive keeps it subtle overall
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 8)
+        g.addColorStop(0, `rgba(${color},${p.alpha * 0.6})`)
+        g.addColorStop(1, 'rgba(0,0,0,0)')
         ctx.beginPath()
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2)
-        ctx.fillStyle = g
-        ctx.fill()
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2)
+        ctx.fillStyle = g; ctx.fill()
 
         ctx.beginPath()
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2)
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2)
         ctx.fillStyle = `rgba(${color},${p.alpha})`
         ctx.fill()
       })
+
+      // Reset composite mode for text/UI elements
+      ctx.globalCompositeOperation = 'source-over'
 
       raf = requestAnimationFrame(animate)
     }

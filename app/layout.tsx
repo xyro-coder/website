@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import PageTransitionWrapper from '@/components/layout/PageTransitionWrapper'
+import CinematicOverlays from '@/components/effects/CinematicOverlays'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,6 +52,7 @@ export default function RootLayout({
             {children}
           </PageTransitionWrapper>
           <Footer />
+          <CinematicOverlays />
         </div>
       </body>
     </html>

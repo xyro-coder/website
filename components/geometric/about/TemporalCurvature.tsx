@@ -124,7 +124,8 @@ export default function TemporalCurvature() {
       const W = canvas.width
       const H = canvas.height
 
-      ctx.fillStyle = 'rgba(8, 12, 30, 0.35)'
+      // Partial clear — additive glow accumulates in the smear
+      ctx.fillStyle = 'rgba(0,0,0,0.42)'
       ctx.fillRect(0, 0, W, H)
 
       // Smoothly animate per-milestone lens amplification
@@ -144,6 +145,9 @@ export default function TemporalCurvature() {
       const gridRows = 14
       const cellW = W / gridCols
       const cellH = H / gridRows
+
+      // Grid and geodesic use additive blending — crossing lines create bright hot-spots
+      ctx.globalCompositeOperation = 'lighter'
 
       // Horizontal grid lines
       for (let row = 0; row <= gridRows; row++) {
@@ -181,25 +185,46 @@ export default function TemporalCurvature() {
         ctx.stroke()
       }
 
-      // ── Geodesic path ──
+      // ── Geodesic path — additive blending creates light-pipe effect ──
+      ctx.globalCompositeOperation = 'lighter'
       const Nseg = 120
-      ctx.beginPath()
-      for (let i = 0; i <= Nseg; i++) {
-        const t = i / Nseg
-        const [px, py] = geodesicPoint(t, W, H)
-        if (i === 0) ctx.moveTo(px, py)
-        else ctx.lineTo(px, py)
+
+      const buildPath = () => {
+        ctx.beginPath()
+        for (let i = 0; i <= Nseg; i++) {
+          const t = i / Nseg
+          const [px, py] = geodesicPoint(t, W, H)
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
+        }
       }
+
       const pathGrad = ctx.createLinearGradient(W * 0.1, 0, W * 0.9, 0)
-      pathGrad.addColorStop(0, 'rgba(6, 182, 212, 0.8)')
-      pathGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.8)')
-      pathGrad.addColorStop(1, 'rgba(6, 182, 212, 0.8)')
+      pathGrad.addColorStop(0, 'rgba(6, 182, 212, 0.65)')
+      pathGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.65)')
+      pathGrad.addColorStop(1, 'rgba(6, 182, 212, 0.65)')
+
+      // Wide glow halo
+      buildPath()
       ctx.strokeStyle = pathGrad
-      ctx.lineWidth = 2
-      ctx.shadowColor = '#06b6d4'
-      ctx.shadowBlur = 8
+      ctx.lineWidth = 14
+      ctx.globalAlpha = 0.18
       ctx.stroke()
-      ctx.shadowBlur = 0
+      ctx.globalAlpha = 1
+
+      // Medium halo
+      buildPath()
+      ctx.lineWidth = 5
+      ctx.globalAlpha = 0.4
+      ctx.stroke()
+      ctx.globalAlpha = 1
+
+      // Core line
+      buildPath()
+      ctx.lineWidth = 1.8
+      ctx.globalAlpha = 1
+      ctx.stroke()
+
+      ctx.globalCompositeOperation = 'source-over'
 
       // Pulse along geodesic
       const pulseT = (anim * 0.2) % 1
@@ -215,6 +240,9 @@ export default function TemporalCurvature() {
       ctx.arc(pulseX, pulseY, 3, 0, Math.PI * 2)
       ctx.fillStyle = 'rgba(6, 182, 212, 1)'
       ctx.fill()
+
+      // Reset for nodes and labels (need normal blending for text)
+      ctx.globalCompositeOperation = 'source-over'
 
       // ── Milestone nodes ──
       mPositions.forEach((mp, i) => {

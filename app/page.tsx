@@ -7,8 +7,9 @@ import SleekButton from '@/components/ui/SleekButton'
 import Badge from '@/components/ui/Badge'
 import { motion } from 'framer-motion'
 
-// All 5 home visualizations — loaded client-side only
+// All home visualizations — loaded client-side only
 const LatentCollapse = dynamic(() => import('@/components/geometric/home/LatentCollapse'), { ssr: false })
+const FluidManifold = dynamic(() => import('@/components/geometric/home/FluidManifold'), { ssr: false })
 const SimplicialComplex = dynamic(() => import('@/components/geometric/home/SimplicialComplex'), { ssr: false })
 const HyperbolicEmbedding = dynamic(() => import('@/components/geometric/home/HyperbolicEmbedding'), { ssr: false })
 const VectorField = dynamic(() => import('@/components/geometric/home/VectorField'), { ssr: false })
@@ -57,6 +58,7 @@ export default function Home() {
       {/* ─── SECTION 1: HERO — Latent Manifold + Hyperbolic Embedding ─── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
         <HyperbolicEmbedding />
+        <FluidManifold />
         <LatentCollapse />
 
         <div className="relative z-10 container mx-auto max-w-7xl px-6 lg:px-8">

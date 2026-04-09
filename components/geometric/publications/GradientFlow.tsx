@@ -89,7 +89,9 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
       t += 0.012
       const rtMode = modeRef.current === 'rt'
 
-      // Partial clear — trail persistence creates motion smear
+      // Reset composite state before partial clear
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
       ctx.fillStyle = 'rgba(0,0,0,0.55)'
       ctx.fillRect(0, 0, W, H)
 

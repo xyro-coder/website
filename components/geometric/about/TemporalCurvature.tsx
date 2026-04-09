@@ -124,7 +124,9 @@ export default function TemporalCurvature() {
       const W = canvas.width
       const H = canvas.height
 
-      // Partial clear — additive glow accumulates in the smear
+      // Always reset before partial clear — previous frame may have left 'lighter'
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
       ctx.fillStyle = 'rgba(0,0,0,0.42)'
       ctx.fillRect(0, 0, W, H)
 

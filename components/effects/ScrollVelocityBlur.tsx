@@ -47,41 +47,40 @@ export default function ScrollVelocityBlur() {
         const H = canvas.height
         const t = Math.min(1, velocity / MAX_VEL)
 
-        // Smear: translucent black fill + slight downward offset of existing pixels
-        // The "offset" is achieved by drawing the canvas back onto itself shifted
-        ctx.globalAlpha = t * MAX_ALPHA
-        ctx.fillStyle = 'rgba(0,0,0,1)'
-        ctx.fillRect(0, 0, W, H)
-        ctx.globalAlpha = 1
+        // Clear first so streaks don't accumulate across frames
+        ctx.clearRect(0, 0, W, H)
 
         // Vertical streak lines — simulate long-exposure scan lines
         const nLines = Math.round(t * 28)
         for (let i = 0; i < nLines; i++) {
           const x = Math.random() * W
-          const len = 60 + Math.random() * 180 * t
-          const alpha = t * 0.04 * Math.random()
+          const yStart = Math.random() * H
+          const len = 80 + Math.random() * 220 * t
+          const alpha = t * 0.055 * Math.random()
           const col = Math.random() > 0.5 ? '6,182,212' : '168,85,247'
 
-          const grad = ctx.createLinearGradient(x, 0, x, len)
+          const grad = ctx.createLinearGradient(x, yStart, x, yStart + len)
           grad.addColorStop(0, `rgba(${col},0)`)
-          grad.addColorStop(0.5, `rgba(${col},${alpha})`)
+          grad.addColorStop(0.45, `rgba(${col},${alpha})`)
           grad.addColorStop(1, `rgba(${col},0)`)
 
           ctx.beginPath()
-          ctx.moveTo(x, Math.random() * H)
-          ctx.lineTo(x, Math.random() * H + len)
+          ctx.moveTo(x, yStart)
+          ctx.lineTo(x, yStart + len)
           ctx.strokeStyle = grad
-          ctx.lineWidth = 0.6
+          ctx.lineWidth = 0.7
           ctx.stroke()
         }
-      } else {
-        // Fade out any residual smear
-        const W = canvas.width
-        const H = canvas.height
-        ctx.globalAlpha = 0.15
+
+        // Subtle dark veil during fast scroll (multiply: darkens geometry briefly)
+        ctx.globalAlpha = t * 0.22
         ctx.fillStyle = 'rgba(0,0,0,1)'
         ctx.fillRect(0, 0, W, H)
         ctx.globalAlpha = 1
+      } else {
+        // Clear completely — transparent canvas + multiply blend = zero effect on page.
+        // Filling with black here would accumulate and darken the page permanently.
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
       }
 
       raf = requestAnimationFrame(animate)

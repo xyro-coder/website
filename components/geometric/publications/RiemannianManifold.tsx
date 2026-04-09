@@ -73,7 +73,8 @@ export default function RiemannianManifold() {
 
     const animate = () => {
       t += 0.007
-      // Partial clear — smear gives a sense of infinite depth
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
       ctx.fillStyle = 'rgba(0,0,0,0.52)'
       ctx.fillRect(0, 0, W, H)
 

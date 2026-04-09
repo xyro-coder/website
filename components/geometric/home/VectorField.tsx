@@ -83,7 +83,8 @@ export default function VectorField() {
 
     const animate = () => {
       t += 0.002
-      ctx.fillStyle = 'rgba(8, 12, 30, 0.15)'
+      // Partial clear — trails persist; additive smear accumulates at convergence
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       lines.forEach(line => {
@@ -125,20 +126,23 @@ export default function VectorField() {
         }
 
         if (line.isPrincipal) {
-          // 10% bright principal components
-          ctx.strokeStyle = `rgba(6, 182, 212, ${fade * 0.9})`
+          // Principal: additive blending — convergence zones over-expose naturally
+          ctx.globalCompositeOperation = 'lighter'
+          // Glow halo pass
+          ctx.strokeStyle = `rgba(6, 182, 212, ${fade * 0.18})`
+          ctx.lineWidth = 7
+          ctx.stroke()
+          // Core pass
+          ctx.strokeStyle = `rgba(6, 182, 212, ${fade * 0.85})`
           ctx.lineWidth = 1.5
-          ctx.shadowColor = '#06b6d4'
-          ctx.shadowBlur = 8
+          ctx.stroke()
+          ctx.globalCompositeOperation = 'source-over'
         } else {
-          // 90% dimmed sparse paths
-          ctx.strokeStyle = `rgba(50, 80, 120, ${fade * 0.25})`
+          // 90% dimmed sparse paths — normal blend, very faint
+          ctx.strokeStyle = `rgba(50, 80, 120, ${fade * 0.18})`
           ctx.lineWidth = 0.5
-          ctx.shadowBlur = 0
+          ctx.stroke()
         }
-
-        ctx.stroke()
-        ctx.shadowBlur = 0
       })
 
       // Draw arrowheads on principal lines

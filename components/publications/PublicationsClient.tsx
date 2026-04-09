@@ -109,7 +109,7 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
 
   return (
     // Seamless navy void — no containers, text floats over continuous dark space
-    <div className="bg-[#080c1e] min-h-screen">
+    <div className="min-h-screen" style={{ background: '#000' }}>
 
       {/* ─── Page header ─── */}
       <motion.div

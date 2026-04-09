@@ -19,7 +19,7 @@
   }
 
   body {
-    background-color: #080c1e;
+    background-color: #000000;
     color: #e2e8f0;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     -webkit-font-smoothing: antialiased;
@@ -80,6 +80,17 @@ code { @apply text-sm font-mono; }
   @apply px-1.5 py-0.5 rounded text-cyan-400;
   background: rgba(6,182,212,0.1);
   border: 1px solid rgba(6,182,212,0.2);
+}
+
+/* ── Schlieren refraction — SVG displacement filter applied on stat card hover ──
+   When a card with this class is hovered, its backdrop appears to refract /
+   bend the geometry behind it, as if the data has mass and refractive index. */
+.schlieren {
+  transition: filter 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.schlieren:hover {
+  filter: url(#schlieren-filter);
 }
 
 /* ── Canvas Void — geometry dissolves into the dark background at edges ── */

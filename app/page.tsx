@@ -53,7 +53,7 @@ function TiltCard({ children, className = '', style = {} }: {
 
 export default function Home() {
   return (
-    <div className="bg-[#080c1e] text-white">
+    <div className="text-white" style={{ background: '#000' }}>
 
       {/* ─── SECTION 1: HERO — Latent Manifold + Hyperbolic Embedding ─── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -153,7 +153,7 @@ export default function Home() {
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ type: 'spring', stiffness: 120, damping: 24 }}
           >
             <Badge variant="cyan" className="mb-6 inline-block">Accepted</Badge>
             <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight" style={{ letterSpacing: '-0.025em' }}>
@@ -203,17 +203,10 @@ export default function Home() {
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: i * 0.1, type: 'spring', stiffness: 120, damping: 24 }}
               >
-                <TiltCard
-                  style={{
-                    background: 'rgba(8,12,30,0.5)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    borderRadius: 20,
-                    padding: '2rem',
-                  }}
-                >
+                {/* Schlieren: hover bends the VectorField behind the number */}
+                <TiltCard className="schlieren" style={{ padding: '2rem' }}>
                   <GeometricCounter value={value} label={label} suffix={suffix} color={color} />
                 </TiltCard>
               </motion.div>
@@ -270,17 +263,15 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: i * 0.08, type: 'spring', stiffness: 120, damping: 24 }}
               >
-                <TiltCard
-                  style={{
-                    background: 'rgba(8,12,30,0.55)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 20,
-                    padding: '2rem',
-                  }}
-                >
+                {/* No box — content floats over CliffordRotors. Schlieren refracts the rotor field on hover */}
+                <TiltCard className="schlieren" style={{
+                  borderLeft: `2px solid rgba(${color},0.35)`,
+                  paddingLeft: '1.75rem',
+                  paddingTop: '1.5rem',
+                  paddingBottom: '1.5rem',
+                }}>
                   <div className="text-4xl font-bold mb-4" style={{ color: `rgb(${color})` }}>
                     {symbol}
                   </div>

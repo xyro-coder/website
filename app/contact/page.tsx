@@ -126,7 +126,7 @@ const stagger = {
 
 export default function ContactPage() {
   return (
-    <div className="relative bg-[#080c1e] min-h-screen pt-16 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="relative min-h-screen pt-16 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden" style={{ background: '#000' }}>
       <AmbientField />
 
       <div className="relative z-10 container mx-auto max-w-4xl py-16">

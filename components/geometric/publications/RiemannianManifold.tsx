@@ -73,7 +73,9 @@ export default function RiemannianManifold() {
 
     const animate = () => {
       t += 0.007
-      ctx.clearRect(0, 0, W, H)
+      // Partial clear — smear gives a sense of infinite depth
+      ctx.fillStyle = 'rgba(0,0,0,0.52)'
+      ctx.fillRect(0, 0, W, H)
 
       const mouse = mouseRef.current
 
@@ -86,6 +88,9 @@ export default function RiemannianManifold() {
           if (d < 38) hoveredIdx = i
         })
       }
+
+      // Grid in additive mode — line crossings brighten naturally
+      ctx.globalCompositeOperation = 'lighter'
 
       // ── Draw grid ──
       // Horizontal lines (vary gy, sweep gx)
@@ -128,6 +133,9 @@ export default function RiemannianManifold() {
         ctx.lineWidth = 0.6
         ctx.stroke()
       }
+
+      // Reset for nodes (need normal blending for glow layering)
+      ctx.globalCompositeOperation = 'source-over'
 
       // ── Draw mass points ──
       MASS_POINTS.forEach((m, i) => {

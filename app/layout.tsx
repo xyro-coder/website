@@ -45,7 +45,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased bg-[#080c1e] text-slate-200`}>
+      <body className={`${inter.variable} font-sans antialiased text-slate-200`} style={{ background: '#000000' }}>
         <div className="min-h-screen flex flex-col">
           <Header />
           <PageTransitionWrapper>

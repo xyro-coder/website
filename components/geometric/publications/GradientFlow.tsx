@@ -83,9 +83,15 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
     resize()
     window.addEventListener('resize', resize)
 
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     let t = 0; let raf: number
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       t += 0.012
       const rtMode = modeRef.current === 'rt'
 
@@ -257,13 +263,13 @@ export default function GradientFlow({ mode }: { mode: 'baseline' | 'rt' }) {
       // Reset composite mode for text/UI elements
       ctx.globalCompositeOperation = 'source-over'
 
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
     }
   }, [])

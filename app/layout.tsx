@@ -2,10 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import 'katex/dist/katex.min.css'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
-import PageTransitionWrapper from '@/components/layout/PageTransitionWrapper'
-import CinematicOverlays from '@/components/effects/CinematicOverlays'
+import ClientShell from '@/components/layout/ClientShell'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -46,14 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased text-slate-200`} style={{ background: '#000000' }}>
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <PageTransitionWrapper>
-            {children}
-          </PageTransitionWrapper>
-          <Footer />
-          <CinematicOverlays />
-        </div>
+        <ClientShell>{children}</ClientShell>
       </body>
     </html>
   )

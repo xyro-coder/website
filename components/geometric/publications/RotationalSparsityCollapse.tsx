@@ -84,10 +84,16 @@ export default function RotationalSparsityCollapse({ collapsed }: { collapsed: b
     buildPoints()
     window.addEventListener('resize', resize)
 
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     let t = 0
     let raf: number
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       t += 0.012
       const W = canvas.width
       const H = canvas.height
@@ -203,13 +209,13 @@ export default function RotationalSparsityCollapse({ collapsed }: { collapsed: b
         H - 12
       )
 
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
     }
   }, [])

@@ -91,6 +91,20 @@ export default function LatentSynthesis() {
       })
     }
 
+    // Pre-build glow sprites per cluster color — replaces per-frame createRadialGradient
+    const glowSprites = CLUSTER_COLORS.map(({ fill }) => {
+      const R = 80
+      const s = document.createElement('canvas')
+      s.width = R * 2; s.height = R * 2
+      const sc = s.getContext('2d')!
+      const g = sc.createRadialGradient(R, R, 0, R, R, R)
+      g.addColorStop(0, `rgba(${fill},1)`)
+      g.addColorStop(1, `rgba(${fill},0)`)
+      sc.beginPath(); sc.arc(R, R, R, 0, Math.PI * 2)
+      sc.fillStyle = g; sc.fill()
+      return { sprite: s, R }
+    })
+
     // Build nodes
     const nodes: SkillNode[] = SKILLS.map((s) => {
       const cc = CLUSTER_CENTERS[s.cluster]
@@ -186,10 +200,16 @@ export default function LatentSynthesis() {
     canvas.addEventListener('mouseleave', onMouseLeave)
 
     // ── Animation ────────────────────────────────────────────────────────────
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     let t = 0
     let raf: number
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       t += 0.016
       const W = canvas.width
       const H = canvas.height
@@ -287,13 +307,13 @@ export default function LatentSynthesis() {
         const glowAlpha = isActive ? 0.55 : n.activation * 0.18
         const r = n.radius
 
-        // Glow halo
+        // Glow halo — use pre-built sprite (no createRadialGradient per frame)
         if (glowAlpha > 0.05) {
-          const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * (isActive ? 4 : 3))
-          glow.addColorStop(0, `rgba(${col}, ${glowAlpha})`)
-          glow.addColorStop(1, `rgba(${col}, 0)`)
-          ctx.beginPath(); ctx.arc(n.x, n.y, r * (isActive ? 4 : 3), 0, Math.PI * 2)
-          ctx.fillStyle = glow; ctx.fill()
+          const { sprite, R: sR } = glowSprites[n.cluster]
+          const drawR = r * (isActive ? 4 : 3)
+          ctx.globalAlpha = glowAlpha * 0.8
+          ctx.drawImage(sprite, n.x - drawR, n.y - drawR, drawR * 2, drawR * 2)
+          ctx.globalAlpha = 1
         }
 
         // Drag ring (extra outer ring while dragging)
@@ -344,14 +364,13 @@ export default function LatentSynthesis() {
           : 'FORCE-DIRECTED GRAPH  ·  drag any node — its cluster follows via semantic edge springs',
         16, H - 14
       )
-
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
       canvas.removeEventListener('mousemove', onMouseMove)
       canvas.removeEventListener('mousedown', onMouseDown)

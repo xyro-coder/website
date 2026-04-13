@@ -32,6 +32,7 @@ function ortho(gx: number, gy: number, gz: number, W: number, H: number) {
 export default function RiemannianManifold() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef<{ x: number; y: number } | null>(null)
+  const pinnedRef = useRef<number>(-1) // index of clicked/pinned node
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -57,6 +58,35 @@ export default function RiemannianManifold() {
     canvas.addEventListener('mousemove', onMouseMove)
     canvas.addEventListener('mouseleave', onMouseLeave)
 
+    // Click to pin/unpin a well — amplifies it persistently
+    const onClick = () => {
+      const mouse = mouseRef.current
+      if (!mouse) return
+      let nearest = -1
+      let nearestD = 48
+      MASS_POINTS.forEach((m, i) => {
+        const { sx, sy } = ortho(m.ux, m.uy, depth(m.ux, m.uy, MASS_POINTS, 0), W, H)
+        const d = Math.sqrt((sx - mouse.x) ** 2 + (sy - mouse.y) ** 2)
+        if (d < nearestD) { nearestD = d; nearest = i }
+      })
+      pinnedRef.current = pinnedRef.current === nearest ? -1 : nearest
+    }
+    canvas.addEventListener('click', onClick)
+
+    // Pre-build glow sprites per mass point — replaces per-frame createRadialGradient
+    const glowSprites = MASS_POINTS.map(m => {
+      const R = 40
+      const s = document.createElement('canvas')
+      s.width = R * 2; s.height = R * 2
+      const sc = s.getContext('2d')!
+      const g = sc.createRadialGradient(R, R, 0, R, R, R)
+      g.addColorStop(0, `rgba(${m.color},1)`)
+      g.addColorStop(1, `rgba(${m.color},0)`)
+      sc.beginPath(); sc.arc(R, R, R, 0, Math.PI * 2)
+      sc.fillStyle = g; sc.fill()
+      return { sprite: s, R }
+    })
+
     let t = 0; let raf: number
 
     // Compute well depth at grid point (gx, gy in [0,1])
@@ -71,7 +101,13 @@ export default function RiemannianManifold() {
       return Math.min(d, 0.38) // clamp max depth
     }
 
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       t += 0.007
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
@@ -89,6 +125,7 @@ export default function RiemannianManifold() {
           if (d < 38) hoveredIdx = i
         })
       }
+      const pinned = pinnedRef.current
 
       // Grid in additive mode — line crossings brighten naturally
       ctx.globalCompositeOperation = 'lighter'
@@ -143,6 +180,7 @@ export default function RiemannianManifold() {
         const gz = depth(m.ux, m.uy, MASS_POINTS, Math.sin(t))
         const { sx, sy } = ortho(m.ux, m.uy, gz, W, H)
         const isHov = i === hoveredIdx
+        const isPinned = i === pinned
         const pulse = 0.7 + Math.sin(t * 2 + i * 0.9) * 0.3
         const depthNorm = gz / 0.38 // how deep is this well (0-1)
 
@@ -158,20 +196,33 @@ export default function RiemannianManifold() {
         ctx.lineWidth = isHov ? 1.5 : 0.8
         ctx.stroke()
 
-        // Glow halo
-        const r = isHov ? 32 : 20
-        const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, r)
-        glow.addColorStop(0, `rgba(${m.color},${isHov ? 0.45 : 0.2 * pulse})`)
-        glow.addColorStop(1, `rgba(${m.color},0)`)
-        ctx.beginPath()
-        ctx.arc(sx, sy, r, 0, Math.PI * 2)
-        ctx.fillStyle = glow
-        ctx.fill()
+        // Pinned: pulsing outer ring
+        if (isPinned) {
+          const ringR = 44 + Math.sin(t * 3) * 8
+          const ringGrad = ctx.createRadialGradient(sx, sy, 26, sx, sy, ringR)
+          ringGrad.addColorStop(0, `rgba(${m.color},0.25)`)
+          ringGrad.addColorStop(1, `rgba(${m.color},0)`)
+          ctx.beginPath()
+          ctx.arc(sx, sy, ringR, 0, Math.PI * 2)
+          ctx.fillStyle = ringGrad; ctx.fill()
+          ctx.beginPath()
+          ctx.arc(sx, sy, 28 + Math.sin(t * 4) * 4, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(${m.color},0.5)`
+          ctx.lineWidth = 1; ctx.stroke()
+        }
+
+        // Glow halo — pre-built sprite, no createRadialGradient per frame
+        const active = isHov || isPinned
+        const r = active ? 36 : 20
+        const { sprite, R: sR } = glowSprites[i]
+        ctx.globalAlpha = active ? 0.5 : 0.2 * pulse
+        ctx.drawImage(sprite, sx - r, sy - r, r * 2, r * 2)
+        ctx.globalAlpha = 1
 
         // Node
         ctx.beginPath()
-        ctx.arc(sx, sy, isHov ? 5.5 : 3.5, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${m.color},${isHov ? 1 : 0.7 * pulse})`
+        ctx.arc(sx, sy, active ? 6 : 3.5, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${m.color},${active ? 1 : 0.7 * pulse})`
         ctx.fill()
 
         // Label
@@ -187,31 +238,36 @@ export default function RiemannianManifold() {
           ctx.fillText(line, sx, labelY)
         })
 
-        // Depth annotation on hover
-        if (isHov) {
-          const depthLabel = `depth: ${(m.mass * 0.31).toFixed(2)}`
+        // Depth annotation on hover or pin
+        if (isHov || isPinned) {
+          const depthLabel = isPinned ? `★ pinned  depth: ${(m.mass * 0.31).toFixed(2)}` : `depth: ${(m.mass * 0.31).toFixed(2)}`
           ctx.font = '8px monospace'
-          ctx.fillStyle = `rgba(${m.color},0.5)`
+          ctx.fillStyle = `rgba(${m.color},${isPinned ? 0.8 : 0.5})`
           ctx.fillText(depthLabel, sx, sy + 18)
         }
       })
 
-      // ── Orthographic projection label ──
+      // ── Label ──
       ctx.font = '8px monospace'
       ctx.textAlign = 'left'
       ctx.fillStyle = 'rgba(99,120,180,0.25)'
-      ctx.fillText('Riemannian Manifold  ·  Orthographic Projection  ·  Hover to probe well depth', 16, H - 14)
-
-      raf = requestAnimationFrame(animate)
+      ctx.fillText(
+        pinned >= 0
+          ? `PINNED: ${MASS_POINTS[pinned].label.replace('\n', ' ')}  ·  click again to release`
+          : 'Riemannian Manifold  ·  Hover to probe  ·  Click to pin a well',
+        16, H - 14
+      )
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
       canvas.removeEventListener('mousemove', onMouseMove)
       canvas.removeEventListener('mouseleave', onMouseLeave)
+      canvas.removeEventListener('click', onClick)
     }
   }, [])
 
@@ -219,7 +275,7 @@ export default function RiemannianManifold() {
     <canvas
       ref={canvasRef}
       className="w-full"
-      style={{ height: 420, display: 'block', cursor: 'crosshair' }}
+      style={{ height: 420, display: 'block', cursor: 'pointer' }}
     />
   )
 }

@@ -43,6 +43,12 @@
   }
 }
 
+/* ── CRT laser sweep ── */
+@keyframes crt-scan {
+  0%   { top: -2px; }
+  100% { top: 100vh; }
+}
+
 /* ── Page transition ── */
 @keyframes page-in {
   from { opacity: 0; transform: translateY(10px); }

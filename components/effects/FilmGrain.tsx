@@ -1,10 +1,10 @@
 'use client'
 
-// Subtle film grain overlay — 2% noise makes it feel like a scientific recording
-// rather than a rendered webpage. Regenerates every 2 frames to save CPU.
 import { useEffect, useRef } from 'react'
 
-const TILE = 256   // noise tile size — tiled across the full viewport
+// Noise tile — regenerated every 8 frames (was every 2), 128px tile (was 256px)
+// 4× less CPU for noise generation, visually indistinguishable.
+const TILE = 128
 
 export default function FilmGrain() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -15,13 +15,15 @@ export default function FilmGrain() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Offscreen tile canvas — only 256×256 pixels written per regeneration
     const tile = document.createElement('canvas')
     tile.width = TILE
     tile.height = TILE
     const tctx = tile.getContext('2d')!
     const imageData = tctx.createImageData(TILE, TILE)
     const data = imageData.data
+
+    // Pre-fill alpha channel once — no need to set it every regen
+    for (let i = 3; i < data.length; i += 4) data[i] = 255
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -36,11 +38,10 @@ export default function FilmGrain() {
 
     const regenerateNoise = () => {
       for (let i = 0; i < data.length; i += 4) {
-        const v = Math.random() * 255
+        const v = (Math.random() * 255) | 0
         data[i] = v
         data[i + 1] = v
         data[i + 2] = v
-        data[i + 3] = 255
       }
       tctx.putImageData(imageData, 0, 0)
       pattern = ctx.createPattern(tile, 'repeat')
@@ -50,16 +51,12 @@ export default function FilmGrain() {
 
     const animate = () => {
       frame++
-      // Regenerate every 2 frames — visible flicker = "live signal" texture
-      if (frame % 2 === 0) regenerateNoise()
-
-      const W = canvas.width
-      const H = canvas.height
+      if (frame % 8 === 0) regenerateNoise()
 
       if (pattern) {
-        ctx.globalAlpha = 0.022   // 2.2% opacity
+        ctx.globalAlpha = 0.022
         ctx.fillStyle = pattern
-        ctx.fillRect(0, 0, W, H)
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.globalAlpha = 1
       }
 

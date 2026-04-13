@@ -102,11 +102,36 @@ export default function StructuralInvariance() {
 
     let rotX = 0.3
     let rotY = 0
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     let anim = 0
     let raf: number
-    let transitionT = 0 // 0 = graph, 1 = simplicial
+    let transitionT = 0
+    let hoveredNodeIdx = -1
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (modeRef.current !== 'graph') { hoveredNodeIdx = -1; return }
+      const rect = canvas.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      let nearest = -1
+      let nearestD = 40
+      nodes.forEach((n, i) => {
+        const d = Math.sqrt((mx - n.x) ** 2 + (my - n.y) ** 2)
+        if (d < nearestD) { nearestD = d; nearest = i }
+      })
+      hoveredNodeIdx = nearest
+      canvas.style.cursor = nearest >= 0 ? 'pointer' : 'default'
+    }
+    const onMouseLeave = () => { hoveredNodeIdx = -1; canvas.style.cursor = 'default' }
+    canvas.addEventListener('mousemove', onMouseMove)
+    canvas.addEventListener('mouseleave', onMouseLeave)
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       anim += 0.01
       const W = canvas.width
       const H = canvas.height
@@ -158,45 +183,64 @@ export default function StructuralInvariance() {
           a.y += a.vy
         })
 
-        // Draw edges
+        // Determine which node indices are connected to hovered node
+        const hoveredConnected = new Set<number>()
+        if (hoveredNodeIdx >= 0) {
+          edgeIdx.forEach(([ai, bi]) => {
+            if (ai === hoveredNodeIdx) hoveredConnected.add(bi)
+            if (bi === hoveredNodeIdx) hoveredConnected.add(ai)
+          })
+        }
+
+        // Draw edges — highlight connected edges on hover
         edgeIdx.forEach(([ai, bi]) => {
           const a = nodes[ai]
           const b = nodes[bi]
+          const isConnectedToHover = hoveredNodeIdx >= 0 && (ai === hoveredNodeIdx || bi === hoveredNodeIdx)
+          const isDimmed = hoveredNodeIdx >= 0 && !isConnectedToHover
           ctx.beginPath()
           ctx.moveTo(a.x, a.y)
           ctx.lineTo(b.x, b.y)
-          ctx.strokeStyle = `rgba(100, 120, 200, ${0.3 * alpha})`
-          ctx.lineWidth = 0.8
+          ctx.strokeStyle = isConnectedToHover
+            ? `rgba(6, 182, 212, ${0.75 * alpha})`
+            : `rgba(100, 120, 200, ${(isDimmed ? 0.06 : 0.3) * alpha})`
+          ctx.lineWidth = isConnectedToHover ? 1.5 : 0.8
           ctx.stroke()
         })
 
         // Draw nodes
-        nodes.forEach(n => {
+        nodes.forEach((n, ni) => {
           const col = n.color
-          const pulse = 1 + Math.sin(anim * 2 + nodes.indexOf(n) * 0.6) * 0.1
+          const pulse = 1 + Math.sin(anim * 2 + ni * 0.6) * 0.1
+          const isHov = ni === hoveredNodeIdx
+          const isNeighbor = hoveredConnected.has(ni)
+          const isDimmed = hoveredNodeIdx >= 0 && !isHov && !isNeighbor
+          const nodeAlpha = isDimmed ? 0.25 : 1
 
           // Glow
-          const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 35)
-          glow.addColorStop(0, `rgba(${col}, ${0.15 * alpha})`)
+          const glowR = isHov ? 55 : 35
+          const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR)
+          glow.addColorStop(0, `rgba(${col}, ${(isHov ? 0.35 : 0.15) * alpha * nodeAlpha})`)
           glow.addColorStop(1, `rgba(${col}, 0)`)
           ctx.beginPath()
-          ctx.arc(n.x, n.y, 35, 0, Math.PI * 2)
+          ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2)
           ctx.fillStyle = glow
           ctx.fill()
 
           // Node
+          const nodeR = isHov ? 14 * pulse : 10 * pulse
           ctx.beginPath()
-          ctx.arc(n.x, n.y, 10 * pulse, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${col}, ${0.25 * alpha})`
+          ctx.arc(n.x, n.y, nodeR, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${col}, ${(isHov ? 0.45 : 0.25) * alpha * nodeAlpha})`
           ctx.fill()
-          ctx.strokeStyle = `rgba(${col}, ${0.8 * alpha})`
-          ctx.lineWidth = 1.5
+          ctx.strokeStyle = `rgba(${col}, ${(isHov ? 1 : 0.8) * alpha * nodeAlpha})`
+          ctx.lineWidth = isHov ? 2 : 1.5
           ctx.stroke()
 
-          ctx.font = '10px monospace'
-          ctx.fillStyle = `rgba(${col}, ${0.9 * alpha})`
+          ctx.font = `${isHov ? 'bold ' : ''}${isHov ? 11 : 10}px monospace`
+          ctx.fillStyle = `rgba(${col}, ${(isHov ? 1 : 0.9) * alpha * nodeAlpha})`
           ctx.textAlign = 'center'
-          ctx.fillText(n.label, n.x, n.y + 24)
+          ctx.fillText(n.label, n.x, n.y + (isHov ? 28 : 24))
         })
       }
 
@@ -301,14 +345,16 @@ export default function StructuralInvariance() {
         ctx.fillText('ICOSAHEDRAL SYMMETRY  ·  Equivariant under SO(3)', cx, H - 16)
       }
 
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
+      canvas.removeEventListener('mousemove', onMouseMove)
+      canvas.removeEventListener('mouseleave', onMouseLeave)
     }
   }, [])
 

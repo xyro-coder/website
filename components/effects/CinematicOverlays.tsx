@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import SchlierenFilter from './SchlierenFilter'
+import CRTScanlines from './CRTScanlines'
 
 const FilmGrain = dynamic(() => import('./FilmGrain'), { ssr: false })
 const ChromaticAberration = dynamic(() => import('./ChromaticAberration'), { ssr: false })
@@ -14,6 +15,7 @@ export default function CinematicOverlays() {
       <ScrollVelocityBlur />
       <FilmGrain />
       <ChromaticAberration />
+      <CRTScanlines />
     </>
   )
 }

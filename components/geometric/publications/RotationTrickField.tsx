@@ -49,6 +49,9 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
 
   const matrixRef = useRef<HTMLPreElement>(null)
   const fRotRef = useRef(0)
+  // Mouse drag to orbit the scene
+  const dragRef = useRef<{ active: boolean; lastX: number; lastY: number }>({ active: false, lastX: 0, lastY: 0 })
+  const userRotRef = useRef({ x: 0, y: 0 }) // user-driven rotation offset
 
   const toggle = useCallback(() => {
     const next = !rotRef.current
@@ -82,14 +85,43 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
     window.addEventListener('resize', resize)
 
     const onEnter = () => setHovered(true)
-    const onLeave = () => setHovered(false)
+    const onLeave = () => { setHovered(false); dragRef.current.active = false; canvas.style.cursor = 'crosshair' }
     canvas.addEventListener('mouseenter', onEnter)
     canvas.addEventListener('mouseleave', onLeave)
+
+    // Drag to rotate
+    const onMouseDown = (e: MouseEvent) => {
+      dragRef.current = { active: true, lastX: e.clientX, lastY: e.clientY }
+      canvas.style.cursor = 'grabbing'
+    }
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current.active) return
+      const dx = e.clientX - dragRef.current.lastX
+      const dy = e.clientY - dragRef.current.lastY
+      userRotRef.current.y += dx * 0.008
+      userRotRef.current.x += dy * 0.008
+      dragRef.current.lastX = e.clientX
+      dragRef.current.lastY = e.clientY
+    }
+    const onMouseUp = () => { dragRef.current.active = false; canvas.style.cursor = 'crosshair' }
+    canvas.addEventListener('mousedown', onMouseDown)
+    canvas.addEventListener('mousemove', onMouseMove)
+    canvas.addEventListener('mouseup', onMouseUp)
+    // Click to toggle (in addition to the button)
+    canvas.addEventListener('click', (e) => {
+      if (Math.abs(e.clientX - dragRef.current.lastX) < 3 && Math.abs(e.clientY - dragRef.current.lastY) < 3) toggle()
+    })
+
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
 
     let t = 0
     let raf: number
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       t += 0.01
       const W = canvas.width
       const H = canvas.height
@@ -111,7 +143,9 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
       const scale = Math.min(W, H) * 0.34
       const cx = W / 2
       const cy = H / 2
-      const rot = t * 0.22   // slow ambient rotation
+      // Ambient rotation + user drag offset
+      const rot = t * 0.22 + userRotRef.current.y
+      const tiltOffset = userRotRef.current.x
 
       // ── Principal axis (emerges as tr increases) ──
       if (tr > 0.08) {
@@ -194,11 +228,14 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
         const curY = baseWithDrift.y + (tg.y - baseWithDrift.y) * tr
         const curZ = p.baseZ * (1 - tr) + tg.z * tr
 
-        // Apply slow ambient rotation
+        // Apply ambient + user rotation (Y-axis)
         const rx = Math.cos(rot) * curX - Math.sin(rot) * curY
         const ry = Math.sin(rot) * curX + Math.cos(rot) * curY
+        // Apply user vertical tilt (X-axis)
+        const rz = Math.cos(tiltOffset) * curZ - Math.sin(tiltOffset) * ry
+        const ry2 = Math.sin(tiltOffset) * curZ + Math.cos(tiltOffset) * ry
 
-        const { sx, sy } = ortho(rx, ry, curZ, cx, cy, scale)
+        const { sx, sy } = ortho(rx, ry2, rz, cx, cy, scale)
 
         const crystallized = tr > 0.55 && p.isTopK
         const pulse = crystallized ? 0.6 + Math.sin(t * 4.5 + p.phase) * 0.4 : 1
@@ -239,16 +276,19 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
         cx, H - 20
       )
 
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
       canvas.removeEventListener('mouseenter', onEnter)
       canvas.removeEventListener('mouseleave', onLeave)
+      canvas.removeEventListener('mousedown', onMouseDown)
+      canvas.removeEventListener('mousemove', onMouseMove)
+      canvas.removeEventListener('mouseup', onMouseUp)
     }
   }, [])
 
@@ -258,6 +298,7 @@ export default function RotationTrickField({ scrollProgress: _unused }: { scroll
         ref={canvasRef}
         className="absolute inset-0 w-full h-full canvas-void"
         style={{ cursor: 'crosshair' }}
+        title="Drag to orbit · Click to toggle"
       />
 
       {/* ── Live SO(3) matrix — updates every frame via direct DOM write ── */}

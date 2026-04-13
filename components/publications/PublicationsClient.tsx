@@ -118,19 +118,12 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
-        <p className="text-xs uppercase tracking-[0.35em] text-slate-700 mb-5 font-mono">
-          Latent Projections · Geometric Rotation · Sparsity Collapse
-        </p>
         <h1 className="text-6xl md:text-8xl font-bold leading-none mb-6">
           <span className="bg-clip-text text-transparent"
             style={{ backgroundImage: 'linear-gradient(135deg, #06b6d4 0%, #a855f7 100%)' }}>
             Publications
           </span>
         </h1>
-        <p className="text-lg text-slate-600 max-w-xl mx-auto leading-relaxed font-mono">
-          research contributions to geometric deep learning<br />
-          and mechanistic interpretability
-        </p>
       </motion.div>
 
       {/* ─── Featured: The Geometric Rotation Interactive Proof ─── */}
@@ -392,16 +385,9 @@ export default function PublicationsClient({ featuredPub, otherPubs }: Props) {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-700 font-mono mb-4">
-              Riemannian Geometry · Gravity Wells · Orthographic Projection
-            </p>
             <h2 className="text-5xl font-bold text-white mb-4" style={{ letterSpacing: '-0.025em' }}>
               Research Interests
             </h2>
-            <p className="text-slate-600 max-w-xl mx-auto text-sm leading-relaxed font-mono">
-              each interest warps the manifold — well depth measures focus.<br />
-              related fields share a valley in the geometry.
-            </p>
           </motion.div>
 
           <div className="rounded-3xl overflow-hidden"

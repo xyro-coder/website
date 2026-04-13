@@ -4,7 +4,10 @@ import dynamic from 'next/dynamic'
 import { Download } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import SleekButton from '@/components/ui/SleekButton'
-import GraphNeuralNetworkBackground from '@/components/geometric/core/GraphNeuralNetworkBackground'
+const GraphNeuralNetworkBackground = dynamic(
+  () => import('@/components/geometric/core/GraphNeuralNetworkBackground'),
+  { ssr: false }
+)
 import { motion } from 'framer-motion'
 
 const ParticleInitials = dynamic(
@@ -99,13 +102,10 @@ export default function AboutPage() {
             </h1>
             <div className="mb-8">
               <ParticleInitials />
-              <p className="text-center text-xs text-slate-600 mt-4 font-mono">
-                <span className="text-cyan-500">Particle Assembly</span> · Identity Through Geometry
-              </p>
             </div>
             <p className="text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed">
-              CS Researcher &amp; ML Engineer probing the geometry of machine learning —
-              from sparse autoencoders to SSL representation theory and graph embeddings
+              CS student and ML engineer at UW —
+              working on sparse autoencoders, SSL representation theory, and mechanistic interpretability
             </p>
           </motion.section>
 
@@ -123,8 +123,7 @@ export default function AboutPage() {
                 <p>
                   I&apos;m a Computer Science student at the University of Washington&apos;s Paul G.
                   Allen School of Computer Science &amp; Engineering, maintaining a 4.0 GPA while
-                  doing research at the intersection of geometric deep learning, mechanistic
-                  interpretability, and representation theory.
+                  doing research in mechanistic interpretability and representation theory.
                 </p>
                 <p>
                   Currently I&apos;m working as an{' '}
@@ -132,9 +131,6 @@ export default function AboutPage() {
                   investigating how CNN inductive biases shape{' '}
                   <span className="text-purple-400 font-semibold">SSL representation geometry</span> —
                   diagnosing alignment, uniformity, and dimensional collapse across architectures.
-                  This summer I&apos;ll be joining{' '}
-                  <span className="text-cyan-400 font-semibold">Analog Devices</span> as an AI/ML Intern
-                  focused on graph-based ML and embedding models for structured circuit data.
                 </p>
                 <p>
                   I was previously a Research Fellow at{' '}
@@ -161,14 +157,7 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-8">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-700 mb-3 font-mono">
-                Manifold Hypothesis · Relational Bias · Force-Directed Clustering
-              </p>
-              <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Latent Synthesis</h2>
-              <p className="text-slate-500 max-w-2xl mx-auto text-sm leading-relaxed">
-                Skills as a structured latent space — related tools gravitate into clusters,
-                edges encode learned associations. Hover a node to probe its neighborhood.
-              </p>
+              <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Skills</h2>
             </div>
 
             <div className="mb-8">
@@ -224,57 +213,35 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-8">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-700 mb-3 font-mono">
-                General Relativity · Geodesics · Spacetime Curvature
-              </p>
-              <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Temporal Curvature</h2>
-              <p className="text-slate-500 max-w-2xl mx-auto text-sm leading-relaxed">
-                Each role warps the career path around it — like mass curves spacetime.
-                The glowing particle follows the geodesic.
-              </p>
+              <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Experience</h2>
             </div>
 
             <TemporalCurvature />
 
             {/* Experience cards */}
+            {/* Stealth AI — current */}
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8"
-              variants={stagger}
-              initial="hidden"
-              whileInView="show"
+              className="mt-8"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
             >
-              {/* Analog Devices — incoming */}
-              <motion.div variants={fadeUp}>
-                <TiltCard style={{ borderLeft: '2px solid rgba(168,85,247,0.45)', paddingLeft: '1.75rem', paddingTop: '0.5rem' }}>
-                  <Badge variant="purple" className="mb-3">Incoming · Summer 2026</Badge>
-                  <h3 className="text-2xl font-bold text-white mb-1" style={{ letterSpacing: '-0.01em' }}>Analog Devices</h3>
-                  <p className="font-semibold mb-2 text-sm" style={{ color: '#a855f7' }}>AI/ML Intern — Graph ML &amp; Embeddings</p>
-                  <p className="text-sm text-slate-500 leading-relaxed">Boston, MA</p>
-                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                    Graph-based ML and embedding models for structured circuit data.
-                  </p>
-                </TiltCard>
-              </motion.div>
-
-              {/* Stealth AI — current */}
-              <motion.div variants={fadeUp}>
-                <TiltCard style={{ borderLeft: '2px solid rgba(6,182,212,0.45)', paddingLeft: '1.75rem', paddingTop: '0.5rem' }}>
-                  <Badge variant="cyan" className="mb-3">Current · Feb 2026 → Present</Badge>
-                  <h3 className="text-2xl font-bold text-white mb-1" style={{ letterSpacing: '-0.01em' }}>Stealth AI Startup</h3>
-                  <p className="font-semibold mb-4 text-sm" style={{ color: '#06b6d4' }}>ML Research Engineer</p>
-                  <ul className="space-y-2 text-sm text-slate-400">
-                    <li className="flex items-start">
-                      <span className="mr-2 mt-0.5 text-cyan-500">▸</span>
-                      Investigating inductive bias effects of CNN architectures (ResNet, ConvNeXt) on SSL representation geometry — diagnosing alignment, uniformity, and dimensional collapse
-                    </li>
-                    <li className="flex items-start">
-                      <span className="mr-2 mt-0.5 text-cyan-500">▸</span>
-                      Two-stage experimental pipeline on CIFAR/STL-10 and ImageNet with ResNet-50; developing loss regularization and augmentation interventions targeting SSL training failure modes
-                    </li>
-                  </ul>
-                </TiltCard>
-              </motion.div>
+              <TiltCard style={{ borderLeft: '2px solid rgba(6,182,212,0.45)', paddingLeft: '1.75rem', paddingTop: '0.5rem' }}>
+                <Badge variant="cyan" className="mb-3">Current · Feb 2026 → Present</Badge>
+                <h3 className="text-2xl font-bold text-white mb-1" style={{ letterSpacing: '-0.01em' }}>Stealth AI Startup</h3>
+                <p className="font-semibold mb-4 text-sm" style={{ color: '#06b6d4' }}>ML Research Engineer</p>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5 text-cyan-500">▸</span>
+                    Investigating inductive bias effects of CNN architectures (ResNet, ConvNeXt) on SSL representation geometry — diagnosing alignment, uniformity, and dimensional collapse
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5 text-cyan-500">▸</span>
+                    Two-stage experimental pipeline on CIFAR/STL-10 and ImageNet with ResNet-50; developing loss regularization and augmentation interventions targeting SSL training failure modes
+                  </li>
+                </ul>
+              </TiltCard>
             </motion.div>
 
             {/* Algoverse — past */}
@@ -349,9 +316,6 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-8">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-700 mb-3 font-mono">
-                Equivariance · Numerical Methods · Geometric Engineering
-              </p>
               <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Projects</h2>
             </div>
 
@@ -403,14 +367,7 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-8">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-700 mb-3 font-mono">
-                Equivariance · Symmetry Groups · Invariant Representations
-              </p>
-              <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Structural Invariance</h2>
-              <p className="text-slate-500 max-w-2xl mx-auto text-sm leading-relaxed">
-                Community and recognition encoded as geometry. Toggle between force-directed graph
-                and icosahedral simplicial complex — same data, different projections.
-              </p>
+              <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Achievements &amp; Involvement</h2>
             </div>
 
             <StructuralInvariance />

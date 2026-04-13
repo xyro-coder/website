@@ -9,7 +9,7 @@ const MILESTONES = [
     label: 'UW Allen School',
     sublabel: 'BS Computer Science',
     date: '2023 →',
-    t: 0.12,
+    t: 0.15,
     color: '6, 182, 212',
     mass: 2.5,
   },
@@ -17,7 +17,7 @@ const MILESTONES = [
     label: 'Algoverse AI',
     sublabel: 'Research Fellow',
     date: 'May 2025 – Mar 2026',
-    t: 0.38,
+    t: 0.48,
     color: '168, 85, 247',
     mass: 2.8,
   },
@@ -25,17 +25,9 @@ const MILESTONES = [
     label: 'Stealth AI Startup',
     sublabel: 'ML Research Engineer',
     date: 'Feb 2026 →',
-    t: 0.65,
+    t: 0.82,
     color: '6, 182, 212',
     mass: 3.2,
-  },
-  {
-    label: 'Analog Devices',
-    sublabel: 'AI/ML Intern',
-    date: 'Summer 2026',
-    t: 0.88,
-    color: '168, 85, 247',
-    mass: 2.2,
   },
 ]
 
@@ -116,10 +108,30 @@ export default function TemporalCurvature() {
     canvas.addEventListener('mousemove', onMouseMove)
     canvas.addEventListener('mouseleave', onMouseLeave)
 
+    // Pre-build glow sprites per milestone color — eliminates createRadialGradient per frame
+    const glowSprites = MILESTONES.map(m => {
+      const R = 70
+      const s = document.createElement('canvas')
+      s.width = R * 2; s.height = R * 2
+      const sc = s.getContext('2d')!
+      const g = sc.createRadialGradient(R, R, 0, R, R, R)
+      g.addColorStop(0, `rgba(${m.color},1)`)
+      g.addColorStop(1, `rgba(${m.color},0)`)
+      sc.beginPath(); sc.arc(R, R, R, 0, Math.PI * 2)
+      sc.fillStyle = g; sc.fill()
+      return { sprite: s, R }
+    })
+
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     let anim = 0
     let raf: number
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       anim += 0.008
       const W = canvas.width
       const H = canvas.height
@@ -138,10 +150,17 @@ export default function TemporalCurvature() {
         lens[i] += (target - lens[i]) * 0.08
       })
 
-      const mPositions = MILESTONES.map(m => {
-        const [px, py] = geodesicPoint(m.t, W, H)
-        return { x: px, y: py, ...m }
-      })
+      // Precompute milestone screen positions — avoid recomputing inside nested loops
+      const mxArr: number[] = [], myArr: number[] = []
+      const mMassArr: number[] = [], mColorArr: string[] = []
+      for (let i = 0; i < MILESTONES.length; i++) {
+        const [px, py] = geodesicPoint(MILESTONES[i].t, W, H)
+        mxArr[i] = px; myArr[i] = py
+        mMassArr[i] = MILESTONES[i].mass + lens[i]
+        mColorArr[i] = MILESTONES[i].color
+      }
+      // mPositions still needed for node rendering
+      const mPositions = MILESTONES.map((m, i) => ({ x: mxArr[i], y: myArr[i], ...m }))
 
       const gridCols = 24
       const gridRows = 14
@@ -151,20 +170,32 @@ export default function TemporalCurvature() {
       // Grid and geodesic use additive blending — crossing lines create bright hot-spots
       ctx.globalCompositeOperation = 'lighter'
 
+      // Inline gridWarp — avoids function call overhead for 25×15×3 = 1125 calls/frame
+      const pulse = 1 + Math.sin(anim * 2) * 0.1
+      const NM = mxArr.length
+
+      const warpPt = (gxIn: number, gyIn: number): [number, number] => {
+        let gx = gxIn, gy = gyIn
+        for (let mi = 0; mi < NM; mi++) {
+          const dx = gx - mxArr[mi]; const dy = gy - myArr[mi]
+          const d2 = dx * dx + dy * dy
+          if (d2 < 1) continue
+          const d = Math.sqrt(d2)
+          const strength = mMassArr[mi] * 1200 / (d2 + 800) * pulse
+          gx -= (dx / d) * strength
+          gy -= (dy / d) * strength
+        }
+        return [gx, gy]
+      }
+
       // Horizontal grid lines
       for (let row = 0; row <= gridRows; row++) {
         ctx.beginPath()
         for (let col = 0; col <= gridCols; col++) {
-          let gx = col * cellW
-          let gy = row * cellH
-          mPositions.forEach((mp, i) => {
-            ;[gx, gy] = gridWarp(gx, gy, mp.x, mp.y, mp.mass, lens[i], anim)
-          })
-          if (col === 0) ctx.moveTo(gx, gy)
-          else ctx.lineTo(gx, gy)
+          const [gx, gy] = warpPt(col * cellW, row * cellH)
+          if (col === 0) ctx.moveTo(gx, gy); else ctx.lineTo(gx, gy)
         }
-        const alpha = row % 4 === 0 ? 0.13 : 0.05
-        ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`
+        ctx.strokeStyle = row % 4 === 0 ? 'rgba(6,182,212,0.13)' : 'rgba(6,182,212,0.05)'
         ctx.lineWidth = row % 4 === 0 ? 0.7 : 0.35
         ctx.stroke()
       }
@@ -173,16 +204,10 @@ export default function TemporalCurvature() {
       for (let col = 0; col <= gridCols; col++) {
         ctx.beginPath()
         for (let row = 0; row <= gridRows; row++) {
-          let gx = col * cellW
-          let gy = row * cellH
-          mPositions.forEach((mp, i) => {
-            ;[gx, gy] = gridWarp(gx, gy, mp.x, mp.y, mp.mass, lens[i], anim)
-          })
-          if (row === 0) ctx.moveTo(gx, gy)
-          else ctx.lineTo(gx, gy)
+          const [gx, gy] = warpPt(col * cellW, row * cellH)
+          if (row === 0) ctx.moveTo(gx, gy); else ctx.lineTo(gx, gy)
         }
-        const alpha = col % 4 === 0 ? 0.08 : 0.03
-        ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`
+        ctx.strokeStyle = col % 4 === 0 ? 'rgba(168,85,247,0.08)' : 'rgba(168,85,247,0.03)'
         ctx.lineWidth = 0.4
         ctx.stroke()
       }
@@ -231,12 +256,10 @@ export default function TemporalCurvature() {
       // Pulse along geodesic
       const pulseT = (anim * 0.2) % 1
       const [pulseX, pulseY] = geodesicPoint(pulseT, W, H)
-      const pulseGlow = ctx.createRadialGradient(pulseX, pulseY, 0, pulseX, pulseY, 22)
-      pulseGlow.addColorStop(0, 'rgba(6, 182, 212, 0.55)')
-      pulseGlow.addColorStop(1, 'rgba(6, 182, 212, 0)')
+      // Simple glow for pulse dot — no createRadialGradient per frame
       ctx.beginPath()
-      ctx.arc(pulseX, pulseY, 22, 0, Math.PI * 2)
-      ctx.fillStyle = pulseGlow
+      ctx.arc(pulseX, pulseY, 20, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.12)'
       ctx.fill()
       ctx.beginPath()
       ctx.arc(pulseX, pulseY, 3, 0, Math.PI * 2)
@@ -257,25 +280,19 @@ export default function TemporalCurvature() {
         const baseRingR = isHovered ? 54 : 40
         const ringR = baseRingR * pulse + lensAmt * 1.2
 
-        const ringGrad = ctx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, ringR)
-        ringGrad.addColorStop(0, `rgba(${col}, ${isHovered ? 0.22 : 0.15})`)
-        ringGrad.addColorStop(0.6, `rgba(${col}, ${isHovered ? 0.1 : 0.06})`)
-        ringGrad.addColorStop(1, `rgba(${col}, 0)`)
-        ctx.beginPath()
-        ctx.arc(mp.x, mp.y, ringR, 0, Math.PI * 2)
-        ctx.fillStyle = ringGrad
-        ctx.fill()
+        // Ring glow — pre-built sprite scaled to ringR
+        const { sprite, R: sR } = glowSprites[i]
+        ctx.globalAlpha = isHovered ? 0.22 : 0.15
+        ctx.drawImage(sprite, mp.x - ringR, mp.y - ringR, ringR * 2, ringR * 2)
+        ctx.globalAlpha = 1
 
-        // Extra lensing ring when hovered
+        // Extra lensing ring when hovered — simple circle, no gradient
         if (isHovered && lensAmt > 0.5) {
-          const outerRing = ringR * 1.6
-          const outerGrad = ctx.createRadialGradient(mp.x, mp.y, ringR * 0.8, mp.x, mp.y, outerRing)
-          outerGrad.addColorStop(0, `rgba(${col}, ${0.06 * (lensAmt / 5.5)})`)
-          outerGrad.addColorStop(1, `rgba(${col}, 0)`)
+          const outerRing = ringR * 1.5
           ctx.beginPath()
           ctx.arc(mp.x, mp.y, outerRing, 0, Math.PI * 2)
-          ctx.fillStyle = outerGrad
-          ctx.fill()
+          ctx.strokeStyle = `rgba(${col}, ${0.08 * (lensAmt / 5.5)})`
+          ctx.lineWidth = 2; ctx.stroke()
         }
 
         // Node circle (larger when hovered)
@@ -331,14 +348,13 @@ export default function TemporalCurvature() {
           : 'MINKOWSKI SPACE-TIME  ·  hover events to warp local geometry',
         16, H - 16
       )
-
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(raf)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
       window.removeEventListener('scroll', onScroll)
       canvas.removeEventListener('mousemove', onMouseMove)

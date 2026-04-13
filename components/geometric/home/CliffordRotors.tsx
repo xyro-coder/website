@@ -51,6 +51,11 @@ export default function CliffordRotors() {
     resize()
     window.addEventListener('resize', resize)
 
+    // Pause when section is off-screen
+    let isVisible = true
+    const observer = new IntersectionObserver(([e]) => { isVisible = e.isIntersecting }, { threshold: 0.01 })
+    observer.observe(canvas)
+
     const onMouseMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY }
     }
@@ -65,6 +70,8 @@ export default function CliffordRotors() {
     let raf: number
 
     const animate = () => {
+      raf = requestAnimationFrame(animate)
+      if (!isVisible) return
       t += 0.01
       const scroll = scrollRef.current
       const mouse = mouseRef.current
@@ -148,19 +155,15 @@ export default function CliffordRotors() {
           : `rgba(168,85,247,0.22)`
         ctx.fill()
 
-        // Glow for highly aligned bivectors
+        // Simple glow for aligned bivectors — no createRadialGradient per frame
         if (proximity > 0.55) {
-          const g = ctx.createRadialGradient(bv.x, sy, 0, bv.x, sy, len * 1.8)
-          g.addColorStop(0, `rgba(6,182,212,${proximity * 0.12})`)
-          g.addColorStop(1, 'rgba(6,182,212,0)')
           ctx.beginPath()
-          ctx.arc(bv.x, sy, len * 1.8, 0, Math.PI * 2)
-          ctx.fillStyle = g
+          ctx.arc(bv.x, sy, len * 1.6, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(6,182,212,${proximity * 0.06})`
           ctx.fill()
         }
       })
 
-      raf = requestAnimationFrame(animate)
     }
 
     animate()
@@ -171,6 +174,7 @@ export default function CliffordRotors() {
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseleave', onMouseLeave)
       window.removeEventListener('scroll', onScroll)
+      observer.disconnect()
     }
   }, [])
 

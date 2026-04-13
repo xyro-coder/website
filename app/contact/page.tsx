@@ -149,8 +149,7 @@ export default function ContactPage() {
             </span>
           </h1>
           <p className="text-lg text-slate-500 max-w-xl leading-relaxed">
-            Interested in geometric deep learning research, ML engineering,
-            or just want to talk math? My inbox is open.
+            Interested in research, ML engineering, or just want to connect? My inbox is open.
           </p>
         </motion.div>
 

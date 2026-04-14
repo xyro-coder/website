@@ -26,6 +26,14 @@ const StructuralInvariance = dynamic(
   () => import('@/components/geometric/about/StructuralInvariance'),
   { ssr: false }
 )
+const SparseCodebook = dynamic(
+  () => import('@/components/geometric/about/SparseCodebook'),
+  { ssr: false }
+)
+const SSLSphere = dynamic(
+  () => import('@/components/geometric/about/SSLSphere'),
+  { ssr: false }
+)
 
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
@@ -106,6 +114,20 @@ export default function AboutPage() {
             <p className="text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed">
               CS student and ML engineer at UW —
               working on sparse autoencoders, SSL representation theory, and mechanistic interpretability
+            </p>
+          </motion.section>
+
+          {/* ─── SSL SPHERE — representation geometry ─── */}
+          <motion.section
+            className="mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <SSLSphere />
+            <p className="text-center text-xs font-mono text-slate-700 mt-3 tracking-widest uppercase">
+              S² Representation Geometry · alignment vs uniformity · drag to rotate
             </p>
           </motion.section>
 
@@ -317,6 +339,10 @@ export default function AboutPage() {
           >
             <div className="text-center mb-8">
               <h2 className="text-4xl font-bold text-white mb-4" style={{ letterSpacing: '-0.02em' }}>Projects</h2>
+            </div>
+
+            <div className="mb-8">
+              <SparseCodebook />
             </div>
 
             <motion.div
